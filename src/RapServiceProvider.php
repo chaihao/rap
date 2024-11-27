@@ -5,6 +5,9 @@ namespace Chaihao\Rap;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Routing\Router;
 use Chaihao\Rap\Exception\Handler;
+use Chaihao\Rap\Services\CurrentStaffService;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Cache\RateLimiting\Limit;
 
 class RapServiceProvider extends ServiceProvider
 {
@@ -45,6 +48,11 @@ class RapServiceProvider extends ServiceProvider
 
             $this->app['config']->set('auth', $merged);
         });
+
+        // 注册 current_staff 单例
+        $this->app->singleton('current_staff', function ($app) {
+            return new CurrentStaffService();
+        });
     }
 
     public function boot(): void
@@ -53,6 +61,9 @@ class RapServiceProvider extends ServiceProvider
 
         // 注册中间件
         $this->registerMiddleware($router);
+
+        // 配置 API 限流
+        $this->configureRateLimiting();
 
         // 加载路由
         $this->loadRoutesFrom(__DIR__ . '/../routes/rap-api.php');
@@ -110,9 +121,46 @@ class RapServiceProvider extends ServiceProvider
         $router->middlewareGroup('rap-api', [
             'check.auth',
             'permission',
-            'throttle:api',
+            // 'throttle:api',
             'cors',
             'request.response.logger',
         ]);
     }
+
+    // 添加这个新方法来配置限流
+    protected function configureRateLimiting(): void
+    {
+        RateLimiter::for('api', function ($request) {
+            return Limit::perMinute(60)->by(
+                optional($request->user())->id ?: $request->ip()
+            );
+        });
+    }
+
+
+
+
+    // 限流配置
+    //     protected function configureRateLimiting(): void
+    // {
+    //     // 定义不同的限流规则
+    //     RateLimiter::for('login', function ($request) {
+    //         return Limit::perMinute(5)->by($request->ip());
+    //     });
+
+    //     RateLimiter::for('sensitive-api', function ($request) {
+    //         return Limit::perMinute(30)->by(optional($request->user())->id ?: $request->ip());
+    //     });
+    // }
+
+    //     // 登录接口限制每IP每分钟5次
+    // Route::post('/login', 'AuthController@login')->middleware('throttle:login');
+
+    // // 敏感接口限制每用户每分钟30次
+    // Route::post('/sensitive-data', 'DataController@sensitive')->middleware('throttle:sensitive-api');
+
+    // // 普通接口不做限制
+    // Route::post('/normal-data', 'DataController@normal');
+
+
 }

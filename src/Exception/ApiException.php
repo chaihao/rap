@@ -5,6 +5,8 @@ namespace Chaihao\Rap\Exception;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class ApiException extends Exception
 {
@@ -97,5 +99,18 @@ class ApiException extends Exception
     public static function forbidden(string $message = '禁止访问'): static
     {
         return new static($message, self::FORBIDDEN);
+    }
+
+    /**
+     * 从其他异常创建 ApiException
+     */
+    public static function from(Throwable $e): static
+    {
+        return new static(
+            $e->getMessage() ?: '服务器错误',
+            $e instanceof HttpExceptionInterface ? $e->getStatusCode() : self::SERVER_ERROR,
+            null,
+            $e instanceof HttpExceptionInterface ? $e->getStatusCode() : self::SERVER_ERROR
+        );
     }
 }
