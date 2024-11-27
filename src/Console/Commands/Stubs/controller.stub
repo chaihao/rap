@@ -1,0 +1,16 @@
+<?php
+
+namespace DummyNamespace;
+
+use App\Http\Controllers\BaseController;
+
+class DummyClass extends BaseController
+{
+    public function __construct(DummyService $service, DummyModel $model)
+    {
+        parent::__construct();
+        $this->setServiceAndModel($service, $model);
+    }
+
+    FUNCTION_NAME_LIST
+}

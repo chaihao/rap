@@ -1,0 +1,12 @@
+<?php
+
+namespace  DummyNamespace;
+
+use Rap\Rap;
+use Rap\Repositories\EloquentRepository;
+
+
+class DummyClass extends EloquentRepository
+{
+   
+}

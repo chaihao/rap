@@ -1,0 +1,15 @@
+<?php
+
+namespace  DummyNamespace;
+
+use App\Services\BaseServices;
+use App\Exception\ApiException;
+
+
+class DummyClass extends BaseServices
+{
+   
+   // 获取模型 $this->getModel();
+     
+}
+    

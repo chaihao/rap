@@ -1,0 +1,24 @@
+<?php
+
+namespace  DummyNamespace;
+
+use Illuminate\Database\Eloquent\Model;
+USE_SOFT_DELETES_STATEMENT
+
+class DummyClass extends Model
+{
+    USE_SOFT_DELETES
+    protected $table = 'TABLE';
+
+    protected $fillable = [ FILLABLE ];
+
+    protected $casts = [ CASTS ];
+
+    public $rules = [
+      RULES
+    ];
+
+    public $scenarios = [
+        SCENARIOS
+    ];
+}
