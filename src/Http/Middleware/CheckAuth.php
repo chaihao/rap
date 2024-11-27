@@ -22,7 +22,7 @@ class CheckAuth
     public function handle(Request $request, Closure $next, string $guard = null): Response
     {
         // 如果未指定守卫，使用默认的'api'守卫
-        $guard = $guard ?? 'api';
+        $guard = $guard ?? config('rap.api.guard', 'api');
         // 设置当前守卫
         auth()->shouldUse($guard);
 

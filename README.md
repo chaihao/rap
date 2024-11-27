@@ -74,8 +74,11 @@ RAP_ENABLE_SQL_LOGGING=true # 是否启用SQL日志记录
 RAP_SQL_LOG_LEVEL=debug # SQL日志记录级别
 RAP_SQL_LOG_DAYS=14 # SQL日志保留天数
 
-# 配置api前缀
-RAP_API_PREFIX=api # api前缀
+# 配置路由前缀
+RAP_API_PREFIX=api # 路由前缀
+
+# 配置api守卫
+RAP_API_GUARD=api # api守卫
 ```
 
 ## 使用说明

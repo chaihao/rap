@@ -2,7 +2,7 @@
 
 return [
     'guards' => [
-        'api' => [
+        config('rap.api.guard') => [
             'driver' => 'jwt',
             'provider' => 'staff',
         ],
