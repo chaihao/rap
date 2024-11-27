@@ -153,6 +153,33 @@ throw new ApiException('操作失败', ApiException::BAD_REQUEST);
 'enable_sql_logging' => true
 ```
 
+## composer.json
+
+```json
+{
+    "require": {
+        "php": "^8.2",
+        "laravel/framework": "^11.0",
+        "chaihao/rap": "dev-main"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Chaihao\\Rap\\": "rap/src/"
+        }
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "rap",
+            "options": {
+                "symlink": true
+            }
+        }
+    ]
+}
+```
+
 ## 开源协议
 
 MIT

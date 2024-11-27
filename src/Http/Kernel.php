@@ -1,6 +1,6 @@
 <?php
 
-namespace Chaihao\Rap\Foundation\Http;
+namespace Chaihao\Rap\Http;
 
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
 
