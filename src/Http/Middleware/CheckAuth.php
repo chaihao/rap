@@ -2,7 +2,7 @@
 
 namespace Chaihao\Rap\Http\Middleware;
 
-use App\Facades\CurrentStaff;
+use Chaihao\Rap\Facades\CurrentStaff;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,7 +23,6 @@ class CheckAuth
     {
         // 如果未指定守卫，使用默认的'api'守卫
         $guard = $guard ?? 'api';
-
         // 设置当前守卫
         auth()->shouldUse($guard);
 

@@ -2,21 +2,67 @@
 
 namespace Chaihao\Rap;
 
-
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Routing\Router;
 use Chaihao\Rap\Exception\Handler;
-use Chaihao\Rap\Foundation\Kernel;
 
 class RapServiceProvider extends ServiceProvider
 {
-    public function boot()
+    public function register(): void
     {
+        // 合并 rap 配置
+        $this->mergeConfigFrom(
+            __DIR__ . '/../config/rap.php',
+            'rap'
+        );
+
+        // 使用完整的命名空间引用
+        $this->app->singleton(
+            \Illuminate\Contracts\Debug\ExceptionHandler::class,
+            Handler::class
+        );
+
+        // 注册自定义命令
+        if ($this->app->runningInConsole()) {
+            $kernel = new \Chaihao\Rap\Foundation\Kernel($this->app, $this->app['events']);
+            $this->commands($kernel->all());
+        }
+
+        // 注册 AppServiceProvider
+        $this->app->register(\Chaihao\Rap\Providers\AppServiceProvider::class);
+
+        // 修改 auth 配置合并方式
+        $this->app->booting(function () {
+            $config = $this->app['config']->get('auth', []);
+            $rapAuth = require __DIR__ . '/../config/auth.php';
+
+            // 深度合并配置
+            $merged = array_merge_recursive($config, [
+                'guards' => $rapAuth['guards'] ?? [],
+                'providers' => $rapAuth['providers'] ?? [],
+                'passwords' => $rapAuth['passwords'] ?? [],
+            ]);
+
+            $this->app['config']->set('auth', $merged);
+        });
+    }
+
+    public function boot(): void
+    {
+        $router = $this->app['router'];
+
+        // 注册中间件
+        $this->registerMiddleware($router);
+
+        // 加载路由
+        $this->loadRoutesFrom(__DIR__ . '/../routes/rap-api.php');
+
         // 加载迁移文件
-        $this->loadMigrationsFrom(__DIR__ . '/Database/Migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/Database/migrations');
 
         // 发布迁移文件
         $this->publishes([
-            __DIR__ . '/Database/Migrations' => database_path('migrations')
+            __DIR__ . '/Database/migrations' => database_path('migrations')
         ], 'rap-migrations');
 
         // 发布配置文件
@@ -46,28 +92,27 @@ class RapServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/resources/lang' => resource_path('lang'),
         ], 'lang');
-
-        // 加载路由
-        $this->loadRoutesFrom(__DIR__ . '/../routes/rap-api.php');
-
-        if ($this->app->runningInConsole()) {
-            $this->commands($this->app['rap.console.kernel']->all());
-        }
     }
 
-    public function register()
+    protected function registerMiddleware(Router $router): void
     {
-        // 正确的写法
-        $this->mergeConfigFrom(
-            __DIR__ . '/../config/rap.php',
-            'rap'
-        );
-        $this->app->singleton(
-            \Illuminate\Contracts\Debug\ExceptionHandler::class,
-            Handler::class
-        );
-        $this->app->singleton('rap.console.kernel', function ($app) {
-            return new Kernel($app, $app['events']);
-        });
+        // 注册全局中间件
+        $kernel = $this->app->make(\Illuminate\Contracts\Http\Kernel::class);
+        $kernel->pushMiddleware(\Chaihao\Rap\Http\Middleware\BaseMiddleware::class);
+
+        // 注册路由中间件
+        $router->aliasMiddleware('check.auth', \Chaihao\Rap\Http\Middleware\CheckAuth::class);
+        $router->aliasMiddleware('permission', \Chaihao\Rap\Http\Middleware\PermissionMiddleware::class);
+        $router->aliasMiddleware('cors', \Chaihao\Rap\Http\Middleware\Cors::class);
+        $router->aliasMiddleware('request.response.logger', \Chaihao\Rap\Http\Middleware\RequestResponseLogger::class);
+
+        // 注册中间件组
+        $router->middlewareGroup('rap-api', [
+            'check.auth',
+            'permission',
+            'throttle:api',
+            'cors',
+            'request.response.logger',
+        ]);
     }
 }

@@ -36,11 +36,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // 发布配置文件
-        $this->publishes([
-            __DIR__ . '/../../config/logging.php' => config_path('rap/logging.php'),
-        ], 'rap-config');
-
         $this->setupSqlLogging();
     }
 

@@ -2,8 +2,8 @@
 
 namespace Chaihao\Rap\Http\Middleware;
 
-use App\Facades\CurrentStaff;
-use App\Services\Sys\PermissionService;
+use Chaihao\Rap\Facades\CurrentStaff;
+use Chaihao\Rap\Services\Sys\PermissionService;
 use Closure;
 use Illuminate\Http\Request;
 use Spatie\Permission\Exceptions\UnauthorizedException;

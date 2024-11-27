@@ -67,7 +67,7 @@ class StaffController extends BaseController
         try {
             $params = $this->request->all();
             $this->checkValidator($params, [
-                'phone' => 'required|unique:master,phone|regex:/^1[3456789]\d{9}$/',
+                'phone' => 'required|unique:' . $this->model->getTable() . ',phone|regex:/^1[3456789]\d{9}$/',
                 'password' => 'required|string|min:8|max:16|regex:/^[a-zA-Z0-9,.*%$#@]{8,16}$/',
                 'verify_password' => 'required|string|min:8|max:16|regex:/^[a-zA-Z0-9,.*%$#@]{8,16}$/',
             ], [
@@ -123,7 +123,7 @@ class StaffController extends BaseController
                 $params['password'] = "123456";
             }
             $this->checkValidator($params, [
-                'phone' => 'required|unique:master,phone|regex:/^1[3456789]\d{9}$/',
+                'phone' => 'required|unique:' . $this->model->getTable() . ',phone|regex:/^1[3456789]\d{9}$/',
                 'password' => 'required|string|min:6|max:16',
                 'name' => 'required|max:20',
                 'sex' => 'in:0,1,2',
