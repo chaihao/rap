@@ -8,7 +8,7 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Spatie\Permission\Traits\HasRoles;
 
-class StaffModel extends Authenticatable implements JWTSubject
+class Staff extends Authenticatable implements JWTSubject
 {
     use SoftDeletes, HasRoles;
     protected $table = 'staff';
@@ -39,7 +39,7 @@ class StaffModel extends Authenticatable implements JWTSubject
         'add' => ['phone', 'password', 'name', 'email', 'salt', 'ip', 'last_login_at', 'sex', 'is_super', 'remark', 'status'],
         'edit' => ['id', 'phone', 'password', 'name', 'email', 'salt', 'ip', 'last_login_at', 'sex', 'is_super', 'remark', 'status'],
         'delete' => ['id'],
-        'get' => ['id'],
+        'detail' => ['id'],
         'status' => ['id', 'status'],
     ];
 

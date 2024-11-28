@@ -215,7 +215,7 @@ class MakeModel extends GeneratorCommand
             $scenarios .= "'add' => ['" . implode("', '", $scenarioFields['add']) . "']," . PHP_EOL;
             $scenarios .= "'edit' => ['id', '" . implode("', '", $scenarioFields['edit']) . "']," . PHP_EOL;
             $scenarios .= "'delete' => ['id']," . PHP_EOL;
-            $scenarios .= "'get' => ['id']," . PHP_EOL;
+            $scenarios .= "'detail' => ['id']," . PHP_EOL;
             // 字段中存在status字段，则生成status场景   
             if (in_array('status', $scenarioFields['add']) || in_array('status', $scenarioFields['edit'])) {
                 $scenarios .= "'status' => ['id', 'status']," . PHP_EOL;

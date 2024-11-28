@@ -11,7 +11,7 @@ return [
     'providers' => [
         'staff' => [
             'driver' => 'eloquent',
-            'model' => \Chaihao\Rap\Models\Auth\StaffModel::class,
+            'model' => \Chaihao\Rap\Models\Auth\Staff::class,
         ],
     ],
 

@@ -2,7 +2,7 @@
 
 namespace Chaihao\Rap\Http\Middleware;
 
-use App\Models\Sys\OperationLogModel;
+use Chaihao\Rap\Models\Sys\OperationLog;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -136,7 +136,7 @@ class RequestResponseLogger
         try {
             $payload = $requestLog['payload'] ?? [];
 
-            $operationLog = new OperationLogModel();
+            $operationLog = new OperationLog();
             $operationLog->fill([
                 'method' => $requestLog['method'] ?? '',
                 'url' => $requestLog['url'] ?? '',

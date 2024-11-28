@@ -7,226 +7,282 @@ use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Routing\Controller;
 use Chaihao\Rap\Exception\ApiException;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Response;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Http\{JsonResponse, Request};
+use Illuminate\Support\Facades\{Response, Validator};
 
-class BaseController extends Controller
+abstract class BaseController extends Controller
 {
     use AuthorizesRequests, DispatchesJobs, ValidatesRequests;
 
-    protected $request;
+    protected Request $request;
     protected $response;
     protected $service;
     protected $model;
 
-    public function __construct()
+    public function __construct(Request $request)
     {
-        $this->request = app(Request::class);
+        $this->request = $request;
         $this->response = app(Response::class);
+        $this->init();
     }
 
     /**
-     * 设置服务和模型
+     * 初始化服务和模型
      */
-    protected function setServiceAndModel($service, $model)
-    {
-        $this->service = $service;
-        $this->model = $model;
-        $this->service->setModel($this->model);
-    }
+    abstract protected function init(): void;
 
     /**
-     * 获取列表
-     * @throws ApiException
-     * @return JsonResponse
+     * 列表接口
      */
     public function list(): JsonResponse
     {
         try {
-            $params = $this->request->all();
+            $params = $this->getValidatedParams();
             $data = $this->service->getList($params);
             return $this->success($data);
-        } catch (\Throwable $th) {
-            return $this->failed($th->getMessage());
+        } catch (\Throwable $e) {
+            return $this->handleException($e);
         }
     }
 
     /**
-     * 添加数据
-     * @throws ApiException
-     * @return JsonResponse
+     * 添加接口
      */
     public function add(): JsonResponse
     {
         try {
             $params = $this->request->all();
-            $this->service->checkValidator($params, 'add');
+            // 验证数据
+            $this->checkValidator($params, 'add');
+            
             $data = $this->service->add($params);
             return $this->success($data);
-        } catch (\Throwable $th) {
-            return $this->failed($th->getMessage());
+        } catch (\Throwable $e) {
+            return $this->handleException($e);
         }
     }
 
     /**
-     * 删除数据
-     * @throws ApiException
-     * @return JsonResponse
+     * 编辑接口
      */
-    public function del($id = null): JsonResponse
+    public function edit(int $id): JsonResponse
     {
         try {
             $params = $this->request->all();
-            if ($id !== null) {
-                $params['id'] = $id;
-            }
-            $this->service->checkValidator($params, 'delete');
-            $data = $this->service->del($params['id']);
-            return $this->message($data['message']);
-        } catch (\Throwable $th) {
-            return $this->failed($th->getMessage());
-        }
-    }
-
-    /**
-     * 编辑状态
-     * @throws ApiException
-     * @return JsonResponse
-     */
-    public function editStatus($id = null): JsonResponse
-    {
-        try {
-            $params = $this->request->all();
-            if ($id !== null) {
-                $params['id'] = $id;
-            }
-            $this->service->checkValidator($params, 'status');
-            $data = $this->service->editStatus($params['id'], $params['status'] ?? null);
-            return $this->message($data['message']);
-        } catch (\Throwable $th) {
-            return $this->failed($th->getMessage());
-        }
-    }
-
-    /**
-     * 编辑数据
-     * @throws ApiException
-     * @return JsonResponse
-     */
-    public function edit(): JsonResponse
-    {
-        try {
-            $params = $this->request->all();
-            $this->service->checkValidator($params, 'edit');
-            $data = $this->service->edit($params['id'], $params);
-            return $this->message($data['message']);
-        } catch (\Throwable $th) {
-            return $this->failed($th->getMessage());
-        }
-    }
-
-    /**
-     * 获取详细数据
-     * @throws ApiException
-     * @return JsonResponse
-     */
-    public function get($id = null): JsonResponse
-    {
-        try {
-            $params = $this->request->all();
-            if ($id !== null) {
-                $params['id'] = $id;
-            }
-            $this->service->checkValidator($params, 'get');
-            $data = $this->service->get($params['id']);
+            $params['id'] = $id;
+            
+            // 验证数据
+            $this->checkValidator($params, 'edit');
+            
+            $data = $this->service->edit($id, $params);
             return $this->success($data);
-        } catch (\Throwable $th) {
-            return $this->failed($th->getMessage());
+        } catch (\Throwable $e) {
+            return $this->handleException($e);
         }
     }
 
     /**
-     * 返回消息
-     * @param string $message
-     * @return JsonResponse
+     * 删除接口
      */
-    public function message(string $message = '操作成功'): JsonResponse
+    public function delete(int $id): JsonResponse
     {
-        return response()->json([
-            'status' => true,
-            'code' => 200,
-            'msg' => $message,
-        ]);
+        try {
+            // 验证ID
+            $this->checkValidator(['id' => $id], 'delete');
+            
+            $this->service->delete($id);
+            return $this->success(null, '删除成功');
+        } catch (\Throwable $e) {
+            return $this->handleException($e);
+        }
     }
 
     /**
-     * 返回成功
-     * @param mixed $data
-     * @param string $message
-     * @return JsonResponse
+     * 详情接口
      */
-    public function success(mixed $data = [], string $message = '处理成功'): JsonResponse
+    public function detail(int $id): JsonResponse
     {
-        return response()->json([
-            'status' => true,
-            'code' => 200,
-            'data' => $data,
-            'msg' => $message,
-        ]);
+        try {
+            // 验证ID
+            $this->checkValidator(['id' => $id], 'detail');
+            
+            $data = $this->service->detail($id);
+            return $this->success($data);
+        } catch (\Throwable $e) {
+            return $this->handleException($e);
+        }
     }
 
     /**
-     * 返回失败
-     * @param string $message
-     * @param int $code
-     * @return JsonResponse
+     * 获取验证后的参数
      */
-    public function failed(string $message, int $code = 400): JsonResponse
+    protected function getValidatedParams(): array
     {
-        return response()->json([
-            'status' => false,
-            'code' => $code,
-            'msg' => $message,
-        ]);
+        $params = $this->request->all();
+        $this->validateListParams($params);
+        return $params;
     }
 
     /**
-     * 字段验证
-     * @param array $data
-     * @param array $rules
-     * @param array $messages
-     * @throws ApiException
+     * 验证列表参数
      */
-    protected function checkValidator(array $data, array $rules, array $messages = []): void
+    protected function validateListParams(array $params): void
     {
+        $rules = [
+            'page' => 'integer|min:1',
+            'page_size' => 'integer|between:1,100',
+            'sort_field' => 'string|max:50',
+            'sort_type' => 'in:asc,desc'
+        ];
+
+        $this->checkValidator($params, $rules);
+    }
+
+    /**
+     * 验证数据
+     */
+    protected function checkValidator(array $data, string|array $scenario, array $messages = []): void
+    {
+        if (is_string($scenario)) {
+            $rules = $this->getRulesByScenario($scenario, $data);
+        } else {
+            $rules = $scenario;
+        }
+
         $validator = Validator::make($data, $rules, $messages);
         if ($validator->fails()) {
-            throw new ApiException($validator->errors()->first());
+            throw new ApiException($validator->errors()->first() ?? '验证失败', 400);
         }
     }
 
     /**
-     * 获取客户端IP地址
-     *
-     * @return string
+     * 根据场景获取验证规则
      */
-    function getClientIP(): string
+    protected function getRulesByScenario(string $scenario, array $data): array
     {
-        $ip = request()->ip();
+        $allRules = $this->model->rules ?? [];
+        $scenarioRules = [];
 
-        if (!$ip || $ip === '::1' || $ip === '127.0.0.1') {
-            $ip = request()->header('X-Forwarded-For');
-            if (strpos($ip, ',') !== false) {
-                $ip = trim(explode(',', $ip)[0]);
+        $fields = $this->getScenarioFields($scenario, $data);
+        foreach ($fields as $field) {
+            if (isset($allRules[$field])) {
+                $scenarioRules[$field] = $this->adjustRuleForScenario($allRules[$field], $field, $scenario, $data);
             }
         }
 
-        if (!$ip) {
-            $ip = request()->header('X-Real-IP');
+        return $scenarioRules;
+    }
+
+    /**
+     * 获取指定场景的字段列表
+     */
+    private function getScenarioFields(string $scenario, array $data): array
+    {
+        return property_exists($this->model, 'scenarios') && isset($this->model->scenarios[$scenario])
+            ? $this->model->scenarios[$scenario]
+            : array_keys($data);
+    }
+
+    /**
+     * 根据场景调整验证规则
+     */
+    private function adjustRuleForScenario(string $rule, string $field, string $scenario, array $data): string
+    {
+        switch ($scenario) {
+            case 'edit':
+                return $this->adjustRuleForEdit($rule, $field, $data);
+            case 'delete':
+            case 'detail':
+            case 'status':
+                return $field === 'id' 
+                    ? 'required|integer|exists:' . $this->model->getTable() . ',id' 
+                    : $rule;
+            case 'add':
+                return $this->adjustRuleForAdd($rule, $field);
+            default:
+                return $rule;
+        }
+    }
+
+    /**
+     * 调整添加场景的验证规则
+     */
+    private function adjustRuleForAdd(string $rule, string $field): string
+    {
+        // 添加场景可能需要的特殊处理
+        return $rule;
+    }
+
+    /**
+     * 调整编辑场景的验证规则
+     */
+    private function adjustRuleForEdit(string $rule, string $field, array $data): string
+    {
+        // 移除 required 规则
+        $rule = preg_replace('/\b(required\|?|(\|required))\b/', '', $rule);
+
+        // 处理唯一性验证
+        if (strpos($rule, 'unique:') !== false) {
+            $rule .= ',' . ($data['id'] ?? '');
         }
 
-        return $ip ?: '0.0.0.0';
+        // 处理 ID 字段
+        if ($field === 'id') {
+            $rule = 'required|integer|exists:' . $this->model->getTable() . ',id';
+        }
+
+        return $rule;
+    }
+
+    /**
+     * 处理异常
+     */
+    protected function handleException(\Throwable $e): JsonResponse
+    {
+        $message = $e instanceof ApiException ? $e->getMessage() : '系统错误';
+        $code = $e instanceof ApiException ? $e->getCode() : 500;
+
+        return $this->failed($message, $code);
+    }
+
+    /**
+     * 成功响应
+     */
+    protected function success($data = null, string $message = '操作成功'): JsonResponse
+    {
+        return response()->json([
+            'code' => 200,
+            'message' => $message,
+            'data' => $data
+        ]);
+    }
+
+    /**
+     * 失败响应
+     */
+    protected function failed(string $message, int $code = 400): JsonResponse
+    {
+        return response()->json([
+            'code' => $code,
+            'message' => $message,
+            'data' => null
+        ]);
+    }
+
+    /**
+     * 修改状态
+     */
+    public function status(int $id): JsonResponse
+    {
+        try {
+            // 验证ID
+            $this->checkValidator(['id' => $id], 'status');
+            
+            $status = $this->request->input('status');
+            $data = $this->service->editStatus($id, $status);
+            return $this->success($data);
+        } catch (\Throwable $e) {
+            return $this->handleException($e);
+        }
     }
 }

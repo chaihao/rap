@@ -5,14 +5,15 @@ namespace Chaihao\Rap\Services;
 use Chaihao\Rap\Exception\ApiException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\{Auth, DB, Validator, Schema, Cache};
 
-class BaseService
+abstract class BaseService
 {
     protected $model;
+    protected array $searchableFields = [];
+    protected array $exportableFields = [];
+    protected array $allowedSortFields = [];
+
 
     /**
      * 设置模型
@@ -36,6 +37,356 @@ class BaseService
             throw new \RuntimeException('Model has not been set.');
         }
         return $this->model;
+    }
+
+
+    /**
+     * 获取列表数据
+     */
+    public function getList(array $params = []): array
+    {
+        $cacheKey = $this->generateCacheKey('list', $params);
+
+        if ($this->getModel()->shouldCache()) {
+            return Cache::remember($cacheKey, $this->getModel()->getCacheTTL(), function () use ($params) {
+                return $this->fetchListData($params);
+            });
+        }
+
+        return $this->fetchListData($params);
+    }
+
+    /**
+     * 获取列表数据
+     */
+    protected function fetchListData(array $params): array
+    {
+        $query = $this->getModel()->newQuery();
+
+        // 应用基础查询
+        $this->applyBaseQuery($query);
+
+        // 应用搜索条件
+        $this->applySearchConditions($query, $params);
+
+        // 应用排序
+        $this->applySorting($query, $params);
+
+        // 获取分页数据
+        $pageSize = $params['page_size'] ?? $this->getModel()->getPageSize();
+        $data = $query->paginate($pageSize);
+
+        // 格式化输出
+        return $this->formatListOutput($data);
+    }
+
+
+
+    /**
+     * 应用基础查询
+     */
+    protected function applyBaseQuery($query): void
+    {
+        // 选择字段
+        $query->select($this->getModel()->getListFields());
+
+        // 加载关联
+        if (method_exists($this->getModel(), 'listWithRelations')) {
+            $query->with($this->getModel()->listWithRelations());
+        }
+
+        // 应用创建者范围
+        $this->applyCreateByScope($query);
+    }
+
+
+    /**
+     * 应用搜索条件
+     */
+    protected function applySearchConditions($query, array $params): void
+    {
+        foreach ($params as $field => $value) {
+            if (empty($value) && $value !== '0') {
+                continue;
+            }
+
+            // 处理模糊查询
+            if (in_array($field, $this->getModel()->getLikeFilterFields())) {
+                $this->applyLikeFilter($query, $field, $value);
+                continue;
+            }
+
+            // 处理数组条件
+            if (is_array($value)) {
+                $this->applyArrayFilter($query, $field, $value);
+                continue;
+            }
+
+            // 处理普通条件
+            $query->where($field, $value);
+        }
+    }
+
+    /**
+     * 应用模糊查询
+     */
+    protected function applyLikeFilter($query, string $field, $value): void
+    {
+        if (is_array($value)) {
+            $query->where(function ($q) use ($field, $value) {
+                foreach ($value as $item) {
+                    $q->orWhere($field, 'like', "%{$item}%");
+                }
+            });
+            return;
+        }
+
+        $query->where($field, 'like', "%{$value}%");
+    }
+
+
+    /**
+     * 应用数组过滤
+     */
+    protected function applyArrayFilter($query, string $field, array $value): void
+    {
+        if (count($value) === 2 && !str_contains($field, 'status')) {
+            $query->whereBetween($field, $value);
+        } else {
+            $query->whereIn($field, $value);
+        }
+    }
+    /**
+     * 应用排序
+     */
+    protected function applySorting($query, array $params): void
+    {
+        $orderField = $params['sort_field'] ?? $this->getModel()->getDefaultOrderField();
+        $direction = $params['sort_type'] ?? $this->getModel()->getDefaultOrderDirection();
+
+        if (!empty($this->allowedSortFields) && !in_array($orderField, $this->allowedSortFields)) {
+            $orderField = $this->getModel()->getDefaultOrderField();
+        }
+
+        $query->orderBy($orderField, $direction);
+
+        if ($orderField !== 'id') {
+            $query->orderBy('id', 'desc');
+        }
+    }
+    /**
+     * 格式化列表输出
+     */
+    protected function formatListOutput($data): array
+    {
+        $result = $data->toArray();
+        $result['data'] = array_map(function ($item) {
+            return $this->getModel()->formatOutput($item);
+        }, $result['data']);
+
+        return $result;
+    }
+    /**
+     * 创建记录
+     */
+    public function add(array $data, bool $validate = true): array
+    {
+        try {
+            DB::beginTransaction();
+
+            if ($validate) {
+                $this->checkValidator($data, 'add');
+            }
+
+            $data = $this->getModel()->formatAttributes($data);
+            $fillableData = $this->filterFillableData($data);
+
+            $this->addCreatorId($fillableData);
+
+            $record = $this->getModel()->create($fillableData);
+
+            $this->clearModelCache();
+
+            DB::commit();
+            return $this->success($record);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw new ApiException($e->getMessage());
+        }
+    }
+    /**
+     * 更新记录
+     */
+    public function edit(int $id, array $data): array
+    {
+        try {
+            DB::beginTransaction();
+
+            $record = $this->findRecord($id);
+            if (!$record) {
+                throw new ApiException('记录不存在');
+            }
+
+            // $this->checkValidator(array_merge(['id' => $id], $data), 'edit');
+
+            $data = $this->getModel()->formatAttributes($data);
+            $fillableData = $this->filterFillableData($data);
+
+            $this->addUpdaterId($fillableData);
+
+            $record->update($fillableData);
+
+            $this->clearModelCache();
+
+            DB::commit();
+            return $this->success($record);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw new ApiException($e->getMessage());
+        }
+    }
+
+
+
+    /**
+     * 生成缓存键名
+     * 
+     * @param string $type 缓存类型
+     * @param array $params 参数数组
+     * @return string
+     */
+    protected function generateCacheKey(string $type, array $params = []): string
+    {
+        // 基础键名
+        $key = sprintf(
+            '%s:%s',
+            $this->getModel()->getTable(),
+            $type
+        );
+
+        // 如果有参数,将参数序列化后添加到键名中
+        if (!empty($params)) {
+            // 移除不需要的参数
+            unset($params['page']);
+
+            // 对参数进行排序,确保相同参数生成相同的键名
+            ksort($params);
+
+            // 将参数数组转换为字符串
+            $paramString = http_build_query($params);
+
+            // 使用md5压缩参数字符串
+            $key .= ':' . md5($paramString);
+        }
+
+        return $key;
+    }
+
+    /**
+     * 过滤可填充数据
+     * 
+     * @param array $data 原始数据
+     * @return array 过滤后的数据
+     */
+    protected function filterFillableData(array $data): array
+    {
+        $fillable = $this->getModel()->getFillable();
+
+        // 如果没有定义可填充字段,返回原始数据
+        if (empty($fillable)) {
+            return $data;
+        }
+
+        // 只保留可填充字段
+        return array_intersect_key(
+            $data,
+            array_flip($fillable)
+        );
+    }
+
+    /**
+     * 清除模型相关的所有缓存
+     */
+    protected function clearModelCache(): void
+    {
+        if ($this->getModel()->shouldCache()) {
+            $this->getModel()->flushCache();
+        }
+    }
+
+    /**
+     * 添加创建者ID
+     */
+    protected function addCreatorId(array &$data): void
+    {
+        if (!$this->getModel()->shouldRecordOperator()) {
+            return;
+        }
+
+        $operatorFields = $this->getModel()->getOperatorFields();
+        $creatorField = $operatorFields['creator'] ?? null;
+
+        if ($creatorField && in_array($creatorField, $this->getModel()->getFillable())) {
+            $data[$creatorField] = $data[$creatorField] ?? Auth::id();
+        }
+    }
+
+    /**
+     * 添加更新者ID
+     */
+    protected function addUpdaterId(array &$data): void
+    {
+        if (!$this->getModel()->shouldRecordOperator()) {
+            return;
+        }
+
+        $operatorFields = $this->getModel()->getOperatorFields();
+        $updaterField = $operatorFields['updater'] ?? null;
+
+        if ($updaterField && in_array($updaterField, $this->getModel()->getFillable())) {
+            $data[$updaterField] = $data[$updaterField] ?? Auth::id();
+        }
+    }
+
+    /**
+     * 检查记录是否存在
+     */
+    protected function checkRecordExists(string $field, $value, ?int $excludeId = null): bool
+    {
+        $query = $this->getModel()->newQuery()
+            ->where($field, $value);
+
+        if ($excludeId !== null) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        return $query->exists();
+    }
+
+    /**
+     * 返回成功响应
+     */
+    protected function success($data = null, string $message = '操作成功'): array
+    {
+        return [
+            'status' => true,
+            'code' => 200,
+            'message' => $message,
+            'data' => $data
+        ];
+    }
+
+    /**
+     * 返回失败响应
+     */
+    protected function failed(string $message = '', int $code = 400): array
+    {
+        return [
+            'status' => false,
+            'code' => $code,
+            'message' => $message,
+            'data' => null
+        ];
     }
 
     /**
@@ -189,7 +540,7 @@ class BaseService
     public function editStatus(int $id, ?int $status = null): array
     {
         // 验证输入数据
-        $this->checkValidator(['id' => $id], 'status');
+        // $this->checkValidator(['id' => $id], 'status');
 
         try {
             DB::beginTransaction();
@@ -218,107 +569,6 @@ class BaseService
         }
     }
 
-    /**
-     * 创建新记录
-     * 
-     * @param array $data 要创建的数据
-     * @param bool $isCheckData 是否检查数据
-     * @return array
-     * @throws ApiException
-     */
-    public function add(array $data, bool $isCheckData = false): array
-    {
-        try {
-            DB::beginTransaction();
-
-            // 如果需要检查数据，则进行验证
-            if ($isCheckData) {
-                $this->checkValidator($data, 'add');
-            }
-
-            // 获取可填充字段并过滤数据
-            $fillableData = $this->getModel()->getFillable();
-            $filteredData = array_intersect_key($data, array_flip($fillableData));
-
-            // 添加创建者ID
-            $this->addCreatorId($filteredData);
-
-            // 创建新记录
-            $record = $this->getModel()->create($filteredData);
-
-            // 清除缓存
-            $this->clearModelCache();
-
-            DB::commit();
-            return $this->success($record, '创建成功');
-        } catch (ApiException $e) {
-            DB::rollBack();
-            throw $e;
-        } catch (\Throwable $th) {
-            DB::rollBack();
-            throw new ApiException('创建失败: ' . $th->getMessage(), 400);
-        }
-    }
-
-    /**
-     * 通过ID更新记录
-     * 
-     * @param int $id 记录ID
-     * @param array $params 要更新的数据
-     * @return array
-     * @throws ApiException
-     */
-    public function edit(int $id, array $params)
-    {
-        try {
-            DB::beginTransaction();
-
-            // 合并ID到参数中用于验证
-            $params['id'] = $id;
-
-            // 查找记录
-            $record = $this->findRecord($id);
-            if (!$record) {
-                throw new ApiException('记录不存在', 404);
-            }
-
-            // 根据场景过滤参数
-            $params = $this->filterParamsByScenario($record, $params, 'edit');
-
-            // 添加更新者ID
-            $this->addUpdaterId($params);
-
-            // 更新记录
-            $record->fill($params)->save();
-
-            // 清除缓存
-            $this->clearModelCache();
-
-            DB::commit();
-            return $this->message('编辑成功');
-        } catch (ApiException $e) {
-            DB::rollBack();
-            throw $e;
-        } catch (\Throwable $th) {
-            DB::rollBack();
-            throw new ApiException('编辑失败', 400);
-        }
-    }
-
-
-    /**
-     * 清除模型缓存
-     */
-    protected function clearModelCache(): void
-    {
-        // 检测模型是否支持缓存
-        if (method_exists($this->getModel(), 'shouldCache')) {
-            // 如果支持缓存，则清除缓存
-            if ($this->getModel()->shouldCache()) {
-                $this->getModel()->flushCache();
-            }
-        }
-    }
 
 
     /**
@@ -328,7 +578,7 @@ class BaseService
      * @return array
      * @throws ApiException
      */
-    public function get(int $id)
+    public function detail(int $id)
     {
         try {
             // 验证ID
@@ -378,7 +628,7 @@ class BaseService
      * 
      * @param int $id 记录ID
      */
-    public function del(int $id)
+    public function delete(int $id)
     {
         $record = $this->findRecord($id);
         if (!$record) {
@@ -390,34 +640,6 @@ class BaseService
     }
 
 
-    /**
-     * 获取列表数据 - 优化查询性能
-     * 
-     * @param array $params 查询参数
-     * @return array 包含分页数据的数组
-     */
-    public function getList(array $params = []): array
-    {
-        $query = $this->getModel()->newQuery();
-
-        $this->applyListFields($query);
-
-        $this->applyListRelations($query);
-        // 应用创建者范围
-        $this->applyCreateByScope($query);
-        // 应用过滤条件
-        $this->applyFilters($query, $params);
-        // 应用排序
-        $this->applySorting($query, $params);
-
-        // 添加缓存支持
-        $this->applyCacheSupport($query);
-
-        $data = $query->paginate($params['page_size'] ?? 20);
-
-        // 返回成功的列表数据
-        return paginateFormat($data);
-    }
 
 
 
@@ -528,17 +750,31 @@ class BaseService
     }
 
     /**
-     * 处理数组条件
+     * 处理数组条件查询
      * 
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $field
-     * @param array $value
+     * @param \Illuminate\Database\Eloquent\Builder $query 查询构建器
+     * @param string $field 字段名
+     * @param array $value 条件值
+     * @throws \InvalidArgumentException 当数组格式不正确时抛出异常
      */
     private function handleArrayCondition($query, string $field, array $value): void
     {
+        // 验证数组不为空
+        if (empty($value)) {
+            return;
+        }
+
+        // 处理直接指定查询方法的情况
+        if ($this->isQueryMethodCondition($value)) {
+            [$method, $field, $condition] = $value;
+            $query->$method($field, $condition);
+            return;
+        }
+
         // 处理比较运算符条件
         if ($this->isComparisonCondition($value)) {
-            $this->applyComparisonFilter($query, $value);
+            [$field, $operator, $condition] = $value;
+            $this->applyComparisonFilter($query, $field, $operator, $condition);
             return;
         }
 
@@ -559,17 +795,32 @@ class BaseService
     }
 
     /**
+     * 检查是否为查询方法条件
+     * 
+     * @param array $value
+     * @return bool
+     */
+    private function isQueryMethodCondition(array $value): bool
+    {
+        return count($value) === 3
+            && is_string($value[0])
+            && in_array($value[0], $this->getAllowedQueryMethods(), true);
+    }
+
+    /**
      * 应用比较运算符过滤
      * 
      * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param array $value
+     * @param string $field
+     * @param string $operator
+     * @param mixed $condition
      */
-    private function applyComparisonFilter($query, array $value): void
+    private function applyComparisonFilter($query, string $field, string $operator, $condition): void
     {
-        if ($value[1] === 'like') {
-            $this->applyLikeFilter($query, $value[0], $value[2]);
+        if ($operator === 'like') {
+            $this->applyLikeFilter($query, $field, $condition);
         } else {
-            $query->where($value[0], $value[1], $value[2]);
+            $query->where($field, $operator, $condition);
         }
     }
 
@@ -591,98 +842,6 @@ class BaseService
         return $defaultLikeFields;
     }
 
-    /**
-     * 应用like过滤条件
-     * 
-     * @param \Illuminate\Database\Eloquent\Builder $query 查询构建器实例
-     * @param string $field 字段名
-     * @param string|array $value 字段值
-     */
-    public function applyLikeFilter($query, string $field, $value): void
-    {
-        // 如果模型定义了自定义的模糊匹配处理方法
-        $methodName = 'apply' . ucfirst($field) . 'LikeFilter';
-        if (method_exists($this->getModel(), $methodName)) {
-            $this->getModel()->$methodName($query, $value);
-            return;
-        }
-
-        // 处理数组形式的模糊匹配
-        if (is_array($value)) {
-            $query->where(function ($q) use ($field, $value) {
-                foreach ($value as $item) {
-                    $q->orWhere($field, 'like', '%' . $item . '%');
-                }
-            });
-            return;
-        }
-
-        // 默认的模糊匹配处理
-        $query->where($field, 'like', '%' . $value . '%');
-    }
-
-
-
-    /**
-     * 应用数组过滤条件
-     * 
-     * @param \Illuminate\Database\Eloquent\Builder $query 查询构建器实例
-     * @param string $field 字段名
-     * @param array $value 字段值（数组）
-     */
-    protected function applyArrayFilter($query, string $field, array $value): void
-    {
-        // 如果数组有两个元素且字段名不包含 'status'，则使用 whereBetween
-        if (count($value) == 2 && strpos($field, 'status') === false) {
-            $query->whereBetween($field, $value);
-        } else {
-            // 否则使用 whereIn
-            $query->whereIn($field, $value);
-        }
-    }
-
-    /**
-     * 应用排序
-     * 
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param array $params
-     */
-    protected function applySorting($query, array $params): void
-    {
-        // 获取默认排序字段
-        $orderField = $this->getDefaultOrderField($params);
-
-        // 获取排序方向
-        $direction = $params['sort_type'] ?? 'desc';
-
-        // 应用排序
-        $query->orderBy($orderField, $direction);
-
-        // 如果不是按ID排序,添加ID作为第二排序字段
-        if ($orderField !== 'id') {
-            $query->orderBy('id', 'desc');
-        }
-    }
-
-    /**
-     * 获取默认排序字段
-     */
-    private function getDefaultOrderField(array $params): string
-    {
-        // 如果指定了排序字段则使用
-        if (!empty($params['sort_field'])) {
-            return $params['sort_field'];
-        }
-
-        // 检查模型是否支持sort字段排序
-        $fillable = $this->getModel()->getFillable();
-        if (in_array('sort', $fillable)) {
-            return 'sort';
-        }
-
-        // 默认使用id排序
-        return 'id';
-    }
 
 
     /**
@@ -698,35 +857,14 @@ class BaseService
     }
 
     /**
-     * 返回重组数据
-     * @param mixed $data
-     * @param string $message
-     * @return array
+     * 返回列表成功响应
      */
-    public function successList(mixed $data = [], string $message = '处理成功'): array
+    protected function successList($data = null, string $message = '操作成功'): array
     {
-        return [
-            'status' => true,
-            'code' => 200,
-            'data' => paginateFormat($data),
-            'message' => $message,
-        ];
-    }
-
-    /**
-     * 返回成功数据
-     * @param mixed $data
-     * @param string $message
-     * @return array
-     */
-    public function success(mixed $data = [], string $message = '处理成功'): array
-    {
-        return [
-            'status' => true,
-            'code' => 200,
-            'data' => $data,
-            'message' => $message,
-        ];
+        return $this->success(
+            $data ? paginateFormat($data) : null,
+            $message
+        );
     }
 
     /**
@@ -739,20 +877,6 @@ class BaseService
         return [
             'status' => true,
             'code' => 200,
-            'message' => $message,
-        ];
-    }
-
-    /**
-     * 返回错误信息
-     * @param string $message
-     * @param int $code
-     */
-    public function failed(string $message, int $code = 400)
-    {
-        return [
-            'status' => false,
-            'code' => $code,
             'message' => $message,
         ];
     }
@@ -864,37 +988,6 @@ class BaseService
 
         return $query->paginate($pageSize);
     }
-
-    /**
-     * 添加创建者ID到数据中
-     * 
-     * @param array &$data 引用传递，直接修改原数组
-     */
-    private function addCreatorId(array &$data): void
-    {
-        $fillableData = $this->getModel()->getFillable();
-        if (in_array('created_user_id', $fillableData)) {
-            $data['created_user_id'] = $data['created_user_id'] ?? Auth::id();
-        } elseif (in_array('created_by', $fillableData)) {
-            $data['created_by'] = $data['created_by'] ?? Auth::id();
-        }
-    }
-
-    /**
-     * 添加更新者ID到数据中
-     * 
-     * @param array &$data 引用传递，直接修改原数组
-     */
-    private function addUpdaterId(array &$data): void
-    {
-        $fillableData = $this->getModel()->getFillable();
-        if (in_array('updated_user_id', $fillableData)) {
-            $data['updated_user_id'] = $data['updated_user_id'] ?? Auth::id();
-        } elseif (in_array('updated_by', $fillableData)) {
-            $data['updated_by'] = $data['updated_by'] ?? Auth::id();
-        }
-    }
-
     /**
      * 查找记录并应用创建者范围
      * 
@@ -910,22 +1003,6 @@ class BaseService
         return $query->find($id);
     }
 
-    /**
-     * 根据场景过滤参数
-     * 
-     * @param Model $record 记录实例
-     * @param array $params 原始参数
-     * @param string $scenario 场景名称
-     * @return array 过滤后的参数
-     */
-    private function filterParamsByScenario(Model $record, array $params, string $scenario): array
-    {
-        $scenarios = $record->scenarios ?? [];
-        if (isset($scenarios[$scenario])) {
-            return array_intersect_key($params, array_flip($scenarios[$scenario]));
-        }
-        return $params;
-    }
 
     /**
      * 加载关联关系
@@ -938,5 +1015,36 @@ class BaseService
             $relations = $this->getModel()->getWithRelations();
             $query->with($relations);
         }
+    }
+
+    /**
+     * 获取允许的查询方法列表
+     * 
+     * @return array<string> 允许使用的查询方法名称数组
+     */
+    private function getAllowedQueryMethods(): array
+    {
+        return [
+            'where',
+            'whereIn',
+            'whereNotIn',
+            'whereBetween',
+            'whereNotBetween',
+            'whereNull',
+            'whereNotNull',
+            'whereDate',
+            'whereMonth',
+            'whereDay',
+            'whereYear',
+            'whereTime',
+            'whereColumn',
+            'whereExists',
+            'whereNotExists',
+            'whereHas',
+            'whereDoesntHave',
+            'whereMorphedTo',
+            'whereJsonContains',
+            'whereJsonLength',
+        ];
     }
 }

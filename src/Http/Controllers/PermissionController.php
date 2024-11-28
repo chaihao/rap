@@ -3,23 +3,20 @@
 namespace Chaihao\Rap\Http\Controllers;
 
 use Chaihao\Rap\Exception\ApiException;
-use Chaihao\Rap\Models\Admin\MasterModel;
 use Chaihao\Rap\Models\Sys\RolesModel;
 use Chaihao\Rap\Services\Sys\PermissionService;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Illuminate\Http\Request;
-use Chaihao\Rap\Http\Controllers\BaseController;
 use Illuminate\Http\JsonResponse;
 
 class PermissionController extends BaseController
 {
-    public function __construct(PermissionService $service)
+    protected function init(): void
     {
-        parent::__construct();
-        $this->service = $service;
+        $this->service = app(PermissionService::class);
+        $this->model = app(Permission::class);
     }
-
     /**
      * 给用户直接分配权限
      * @return \Illuminate\Http\JsonResponse

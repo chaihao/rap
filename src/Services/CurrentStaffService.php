@@ -2,19 +2,19 @@
 
 namespace Chaihao\Rap\Services;
 
-use Chaihao\Rap\Models\Auth\StaffModel;
+use Chaihao\Rap\Models\Auth\Staff;
 use Illuminate\Support\Facades\Cache;
 
 class CurrentStaffService extends BaseService
 {
    private $staff = null;
 
-   public function setStaff(?StaffModel $staff): void
+   public function setStaff(?Staff $staff): void
    {
       $this->staff = $staff;
    }
 
-   public function getStaff(): ?StaffModel
+   public function getStaff(): ?Staff
    {
       return $this->staff;
    }
@@ -54,7 +54,7 @@ class CurrentStaffService extends BaseService
    }
 
    // 使用缓存获取用户数据
-   public function getStaffWithCache(): ?StaffModel
+   public function getStaffWithCache(): ?Staff
    {
       if (!$this->staff) {
          return null;

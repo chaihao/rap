@@ -15,13 +15,14 @@ return new class extends Migration {
             $table->text('user_agent')->nullable()->comment('用户代理');
             $table->json('payload')->nullable()->comment('请求参数');
             $table->json('response')->nullable()->comment('响应参数');
-            $table->integer('merchant_id')->default(0)->comment('商户ID');
             $table->string('name')->default('')->comment('操作名称');
-            // 操作人ID
-            $table->integer('action_user_id')->default(0)->comment('操作人ID');
-            // 操作人类型 1 总管理平台员工 2 分公司员工 3 用户
-            $table->tinyInteger('action_user_type')->default(0)->comment('操作人类型 1 总管理平台员工 2 分公司员工 3 用户');
+            // 创建人ID
+            $table->integer('created_by')->default(0)->comment('创建人ID');
+            // 创建人类型 1 总管理平台员工 2 分公司员工 3 用户
+            $table->tinyInteger('created_by_platform')->default(0)->comment('创建人类型 1 总管理平台员工 3 用户');
             $table->timestamps();
+            $table->index('created_by', 'idx_created_by');
+            $table->index('name', 'idx_name');
         });
 
         Schema::create('sys_address', function (Blueprint $table) {
@@ -48,6 +49,7 @@ return new class extends Migration {
             $table->tinyInteger('status')->nullable()->default(1)->comment('状态');
             $table->timestamps();
             $table->softDeletes();
+            $table->index('phone', 'idx_phone');
         });
     }
 };

@@ -2,14 +2,17 @@
 
 namespace  DummyNamespace;
 
-use App\Services\BaseServices;
-use App\Exception\ApiException;
+use Chaihao\Rap\Services\BaseService;
+use Chaihao\Rap\Exception\ApiException;
 
 
-class DummyClass extends BaseServices
+class DummyClass extends BaseService
 {
    
-   // 获取模型 $this->getModel();
+      public function __construct(DummyModel $model)
+      {
+         $this->setModel($model);
+      }
      
 }
     

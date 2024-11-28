@@ -2,10 +2,10 @@
 
 namespace  DummyNamespace;
 
-use Illuminate\Database\Eloquent\Model;
+use Chaihao\Rap\Models\BaseModel;
 USE_SOFT_DELETES_STATEMENT
 
-class DummyClass extends Model
+class DummyClass extends BaseModel
 {
     USE_SOFT_DELETES
     protected $table = 'TABLE';

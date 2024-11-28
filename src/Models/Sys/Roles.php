@@ -2,10 +2,10 @@
 
 namespace  Chaihao\Rap\Models\Sys;
 
-use Illuminate\Database\Eloquent\Model;
+use Chaihao\Rap\Models\BaseModel;
 
 
-class RolesModel extends Model
+class Roles extends BaseModel
 {
 
     protected $table = 'roles';
@@ -24,6 +24,6 @@ class RolesModel extends Model
         'add' => ['name', 'slug', 'guard_name'],
         'edit' => ['id', 'name', 'slug', 'guard_name'],
         'delete' => ['id'],
-        'get' => ['id'],
+        'detail' => ['id'],
     ];
 }

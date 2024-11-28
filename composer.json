@@ -13,7 +13,10 @@
             "providers": [
                 "Chaihao\\Rap\\RapServiceProvider"
             ]
-        }
+        },
+        "files": [
+            "src/common.php"
+        ]
     },
     "require": {
         "php": "^8.2",

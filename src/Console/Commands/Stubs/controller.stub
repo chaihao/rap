@@ -2,14 +2,14 @@
 
 namespace DummyNamespace;
 
-use App\Http\Controllers\BaseController;
+use Chaihao\Rap\Http\Controllers\BaseController;
 
 class DummyClass extends BaseController
 {
-    public function __construct(DummyService $service, DummyModel $model)
+    protected function init(): void
     {
-        parent::__construct();
-        $this->setServiceAndModel($service, $model);
+        $this->service = app(DummyService::class);
+        $this->model = app(DummyModel::class);
     }
 
     FUNCTION_NAME_LIST

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Permission\Models\Permission;
 
-class PermissionsModel extends Permission
+class Permissions extends Permission
 {
     use SoftDeletes;
     protected $table = 'permissions';
@@ -34,7 +34,7 @@ class PermissionsModel extends Permission
         'add' => ['name', 'method', 'uri', 'controller', 'action', 'slug', 'prefix', 'guard_name', 'middleware', 'group', 'group_name', 'is_login', 'status'],
         'edit' => ['id', 'name', 'method', 'uri', 'controller', 'action', 'slug', 'prefix', 'guard_name', 'middleware', 'group', 'group_name', 'is_login', 'status'],
         'delete' => ['id'],
-        'get' => ['id'],
+        'detail' => ['id'],
         'status' => ['id', 'status'],
     ];
 }

@@ -4,10 +4,9 @@ namespace  Chaihao\Rap\Services\Sys;
 
 use Chaihao\Rap\Exception\ApiException;
 use Chaihao\Rap\Jobs\AddPermissionJob;
-use Chaihao\Rap\Models\Auth\StaffModel;
+use Chaihao\Rap\Models\Auth\Staff;
 use Chaihao\Rap\Models\Sys\Permissions;
-use Chaihao\Rap\Models\Sys\PermissionsModel;
-use Chaihao\Rap\Models\Sys\RolesModel;
+use Chaihao\Rap\Models\Sys\Roles;
 use Chaihao\Rap\Services\BaseService;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -17,18 +16,15 @@ use Spatie\Permission\Models\Role;
 
 class PermissionService extends BaseService
 {
-
-
-
    /**
     * 给用户直接分配权限
     * @param int $userId 用户ID
     * @param string|array $permissions 权限名称或权限数组
-    * @return StaffModel
+    * @return Staff
     */
    public function givePermissionTo(int $userId, string|array $permissions)
    {
-      $user = StaffModel::find($userId);
+      $user = Staff::find($userId);
       if (!$user) {
          throw new ApiException('用户不存在');
       }
@@ -40,11 +36,11 @@ class PermissionService extends BaseService
     * 撤销用户的指定权限
     * @param int $userId 用户ID
     * @param string|array $permissions 权限名称或权限数组
-    * @return StaffModel
+    * @return Staff
     */
    public function revokePermissionTo(int $userId, string|array $permissions)
    {
-      $user = StaffModel::find($userId);
+      $user = Staff::find($userId);
       if (!$user) {
          throw new ApiException('用户不存在');
       }
@@ -56,11 +52,11 @@ class PermissionService extends BaseService
     * 同步用户权限(会删除之前的所有权限)
     * @param int $userId 用户ID
     * @param array $permissions 权限数组
-    * @return StaffModel
+    * @return Staff
     */
    public function syncPermissions(int $userId, array $permissions)
    {
-      $user = StaffModel::find($userId);
+      $user = Staff::find($userId);
       if (!$user) {
          throw new ApiException('用户不存在');
       }
@@ -77,13 +73,28 @@ class PermissionService extends BaseService
     */
    public function syncRolePermissions(int $roleId, array $permissions)
    {
-      $role = RolesModel::find($roleId);
+      $role = Roles::find($roleId);
       if (!$role) {
          throw new ApiException('角色不存在');
       }
       return $role->syncPermissions($permissions);
    }
 
+   /**
+    * 给用户分配权限
+    * @param int $userId
+    * @param array $permissions
+    * @return Staff
+    */
+   public function assignPermission(int $userId, array $permissions)
+   {
+      $user = Staff::find($userId);
+      if (!$user) {
+         throw new ApiException('用户不存在');
+      }
+      $user->assignPermission($permissions);
+      return $user;
+   }
 
    /**
     * 获取用户的所有权限
@@ -92,7 +103,7 @@ class PermissionService extends BaseService
     */
    public function getUserPermissions(int $userId, string $fieldColumn = null): array
    {
-      $user = StaffModel::find($userId);
+      $user = Staff::find($userId);
       if (!$user) {
          throw new ApiException('用户不存在');
       }
@@ -109,7 +120,7 @@ class PermissionService extends BaseService
     */
    public function getUserRoles(int $userId): array
    {
-      $user = StaffModel::find($userId);
+      $user = Staff::find($userId);
       if (!$user) {
          throw new ApiException('用户不存在');
       }
@@ -120,11 +131,11 @@ class PermissionService extends BaseService
     * 分配角色
     * @param int $id
     * @param string|array $role
-    * @return StaffModel
+    * @return Staff
     */
    public function assignRole(int $id, string|array $role)
    {
-      $user = StaffModel::find($id);
+      $user = Staff::find($id);
       if (!$user) {
          throw new ApiException('用户不存在');
       }
@@ -136,11 +147,11 @@ class PermissionService extends BaseService
     * 移除角色
     * @param int $id
     * @param string $role
-    * @return StaffModel
+    * @return Staff
     */
    public function removeRole(int $id, string $role)
    {
-      $user = StaffModel::find($id);
+      $user = Staff::find($id);
       if (!$user) {
          throw new ApiException('用户不存在');
       }
@@ -157,7 +168,7 @@ class PermissionService extends BaseService
     */
    public function createRole(array $data): Role
    {
-      return RolesModel::create([
+      return Roles::create([
          'name' => $data['name'],
          'slug' => $data['slug'],
          'guard_name' => $data['guard_name'] ?? 'api'
@@ -171,7 +182,7 @@ class PermissionService extends BaseService
     */
    public function getRolePermissions(int $roleId): array
    {
-      $role = RolesModel::find($roleId);
+      $role = Roles::find($roleId);
       if (!$role) {
          throw new ApiException('角色不存在');
       }
@@ -186,7 +197,7 @@ class PermissionService extends BaseService
    public function getAllPermissions(): array
    {
       // 获取按组分组的权限
-      $groupedPermissions = PermissionsModel::all(['id', 'name', 'method', 'uri', 'slug', 'group', 'group_name'])->groupBy('group');
+      $groupedPermissions = Permissions::all(['id', 'name', 'method', 'uri', 'slug', 'group', 'group_name'])->groupBy('group');
       // 重组数据结构
       $result = [];
       foreach ($groupedPermissions as $group => $permissions) {
@@ -213,14 +224,14 @@ class PermissionService extends BaseService
          $routeCollection = Route::getRoutes();
          $allRoutes = [];
          // 获取所有权限的URI
-         $existingPermissions = PermissionsModel::onlyTrashed()->pluck('uri')->toArray();
+         $existingPermissions = Permissions::onlyTrashed()->pluck('uri')->toArray();
 
 
          // 如果要软删除所有未删除的记录，使用 whereNull('deleted_at')->delete()
          // 如果要软删除所有记录（包括已删除的），使用 withTrashed()->delete()
          // 如果要永久删除记录，使用 forceDelete()
          // 软删所有权限
-         PermissionsModel::whereNull('deleted_at')->delete();
+         Permissions::whereNull('deleted_at')->delete();
 
          foreach ($routeCollection as $route) {
             $routeInfo = $this->buildRouteInfo($route);
@@ -311,10 +322,10 @@ class PermissionService extends BaseService
       }
       // 检查权限是否已存在
       if (!in_array($routes['uri'], $existingPermissions)) {
-         $result =  PermissionsModel::create($routes);
+         $result =  Permissions::create($routes);
          return $result->id;
       } else {
-         $result = PermissionsModel::where('uri', $routes['uri'])->withTrashed()->first();
+         $result = Permissions::where('uri', $routes['uri'])->withTrashed()->first();
          // 恢复软删
          $result->restore();
          return $result->id;

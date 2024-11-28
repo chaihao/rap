@@ -2,9 +2,9 @@
 
 namespace  Chaihao\Rap\Models\Sys;
 
-use Illuminate\Database\Eloquent\Model;
+use Chaihao\Rap\Models\BaseModel;
 
-class SysAddressModel extends Model
+class SysAddress extends BaseModel
 {
     protected $table = 'sys_address';
 
@@ -22,7 +22,7 @@ class SysAddressModel extends Model
         'add' => ['code', 'name', 'parent_code'],
         'edit' => ['id', 'code', 'name', 'parent_code'],
         'delete' => ['id'],
-        'get' => ['id'],
+        'detail' => ['id'],
     ];
     // 关闭自动维护created_at和updated_at
     public $timestamps = false;

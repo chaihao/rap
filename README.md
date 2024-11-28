@@ -26,6 +26,33 @@ Rap 是一个基于 Laravel 11.x 的基础组件包,提供了常用的功能模�
 composer require chaihao/rap
 ```
 
+### composer.json
+
+```json
+{
+    "require": {
+        "php": "^8.2",
+        "laravel/framework": "^11.0",
+        "chaihao/rap": "dev-main"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Chaihao\\Rap\\": "rap/src/"
+        }
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "rap",
+            "options": {
+                "symlink": true
+            }
+        }
+    ]
+}
+```
+
 2. 发布配置文件:
 
 ```bash
@@ -156,32 +183,6 @@ throw new ApiException('操作失败', ApiException::BAD_REQUEST);
 'enable_sql_logging' => true
 ```
 
-## composer.json
-
-```json
-{
-    "require": {
-        "php": "^8.2",
-        "laravel/framework": "^11.0",
-        "chaihao/rap": "dev-main"
-    },
-    "autoload": {
-        "psr-4": {
-            "App\\": "app/",
-            "Chaihao\\Rap\\": "rap/src/"
-        }
-    },
-    "repositories": [
-        {
-            "type": "path",
-            "url": "rap",
-            "options": {
-                "symlink": true
-            }
-        }
-    ]
-}
-```
 
 ## 开源协议
 
