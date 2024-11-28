@@ -1,188 +1,199 @@
-# Rap
+# RAP 组件
 
-Rap 是一个基于 Laravel 11.x 的基础组件包,提供了常用的功能模块。
+RAP 是一个基于 Laravel 的后台管理系统组件包,提供完整的 RBAC 权限管理、用户认证、日志记录等功能。
 
 ## 功能特性
 
-- JWT 认证
-- RBAC 权限管理 
-- 员工管理
-- 多语言支持
-- 异常处理
-- 日志记录
+- 用户认证与授权管理 (JWT + RBAC)
+- 完整的权限控制系统
+- 操作日志与 SQL 日志记录
+- API 限流与跨域处理
+- 统一异常处理
+- 代码生成工具
 
 ## 系统要求
 
 - PHP >= 8.2
-- Laravel >= 11.9
-- JWT Auth >= 2.1
-- Laravel Permission >= 6.10
+- Laravel >= 11.0
+- MySQL >= 5.7
 
-## 安装
+## 快速开始
 
-1. 通过 Composer 安装:
+### 1. 安装
 
 ```bash
 composer require chaihao/rap
 ```
 
-### composer.json
+### 2. 基础配置
 
-```json
-{
-    "require": {
-        "php": "^8.2",
-        "laravel/framework": "^11.0",
-        "chaihao/rap": "dev-main"
-    },
-    "autoload": {
-        "psr-4": {
-            "App\\": "app/",
-            "Chaihao\\Rap\\": "rap/src/"
-        }
-    },
-    "repositories": [
-        {
-            "type": "path",
-            "url": "rap",
-            "options": {
-                "symlink": true
-            }
-        }
-    ]
-}
-```
-
-2. 发布配置文件:
-
+* 发布配置文件
 ```bash
-# 发布所有配置
 php artisan vendor:publish --tag=rap-config
-
-# 分别发布配置
-php artisan vendor:publish --tag=rap-config-core     # 核心配置
-php artisan vendor:publish --tag=rap-config-jwt      # JWT配置
-php artisan vendor:publish --tag=rap-config-permission # 权限配置
 ```
 
-3. 运行数据库迁移:
-
+* 运行数据库迁移
 ```bash
 php artisan migrate
 ```
 
-## 配置
-
-1. 在 `.env` 文件中配置数据库连接
-
-2. 生成 JWT 密钥:
-
+* 生成 JWT 密钥
 ```bash
 php artisan jwt:secret
 ```
 
-3. 配置日志:
+### 3. 环境变量配置
+
+```env
+# API 配置
+RAP_API_PREFIX=api        # API 路由前缀
+RAP_API_GUARD=api        # API 认证守卫
+
+# 日志配置
+RAP_ENABLE_SQL_LOGGING=true   # 启用 SQL 日志
+RAP_SQL_LOG_LEVEL=debug      # 日志级别
+RAP_SQL_LOG_DAYS=14         # 日志保留天数
+
+# 系统配置
+SYSTEM_UPGRADE=false        # 系统升级模式
+```
+
+## 核心功能
+
+### 认证功能
 
 ```php
-# config/rap/logging.php
-
-return [
-    'enable_sql_logging' => env('RAP_ENABLE_SQL_LOGGING', false),
-    'sql_log_level' => env('RAP_SQL_LOG_LEVEL', 'debug'),
-    'sql_log_days' => env('RAP_SQL_LOG_DAYS', 14),
-];
+# 认证相关路由
+POST /auth/login         # 登录
+POST /auth/register     # 注册
+POST /auth/staff_info   # 获取用户信息
+POST /auth/logout       # 退出登录
 ```
-
-4. 配置ENV环境变量:
-
-```bash
-# 配置日志
-RAP_ENABLE_SQL_LOGGING=true # 是否启用SQL日志记录
-RAP_SQL_LOG_LEVEL=debug # SQL日志记录级别
-RAP_SQL_LOG_DAYS=14 # SQL日志保留天数
-
-# 配置路由前缀
-RAP_API_PREFIX=api # 路由前缀
-
-# 配置api守卫
-RAP_API_GUARD=api # api守卫
-```
-
-## 使用说明
-
-### 认证相关
-
-提供以下接口:
-
-- 登录: POST /auth/login
-- 注册: POST /auth/register  
-- 获取用户信息: POST /auth/staff_info
-- 退出登录: POST /auth/logout
 
 ### 权限管理
 
-提供以下接口:
+```php
+# 权限管理路由
+POST /permission/add                    # 添加权限
+POST /permission/create_role           # 创建角色
+POST /permission/assign_role           # 分配角色
+POST /permission/get_all              # 获取权限列表
+POST /permission/get_all_roles        # 获取角色列表
+POST /permission/sync_role_permissions # 同步角色权限
+```
 
-- 添加权限: POST /permission/add
-- 创建角色: POST /permission/create_role
-- 分配角色: POST /permission/assign_role
-- 获取权限列表: POST /permission/get_all
-- 获取角色列表: POST /permission/get_all_roles
+### 异常处理
+
+```php
+# 统一异常处理
+throw new ApiException('操作失败', ApiException::BAD_REQUEST);
+
+# 支持的错误码
+- BAD_REQUEST (400)      # 请求错误
+- UNAUTHORIZED (401)     # 未授权
+- FORBIDDEN (403)       # 禁止访问
+- NOT_FOUND (404)       # 未找到
+- VALIDATION_ERROR (422) # 验证错误
+- SERVER_ERROR (500)    # 服务器错误
+```
 
 ### 中间件
 
-组件提供以下中间件:
+```php
+# 核心中间件
+'check.auth'              # JWT 认证
+'permission'              # 权限验证
+'cors'                    # 跨域处理
+'request.response.logger' # 请求响应日志
+'upgrade'                # 系统升级模式
 
-- check.auth: JWT认证
-- permission: 权限验证
-- cors: 跨域处理
-- request.response.logger: 请求响应日志
-
-### 命令行工具
-
-```bash
-# 创建 Service
-php artisan make:services UserService
-
-# 创建 Repository 
-php artisan make:repositories UserRepository
-
-# 创建 Controller
-php artisan make:controllers UserController
-
-# 创建 Model
-php artisan make:models User
+# 默认中间件组 rap-api
+[
+    'check.auth',
+    'permission', 
+    'cors',
+    'request.response.logger'
+]
 ```
 
-## 多语言支持
-
-组件内置中文语言包,位于 `resources/lang/zh_CN/` 目录。默认无需发布即可使用,如需自定义可通过以下命令发布语言文件:
+### 代码生成器
 
 ```bash
+# 生成各类文件
+php artisan make:controller UserController  # 控制器
+php artisan make:model User                # 模型
+php artisan make:services UserService      # 服务类
+php artisan make:repositories UserRepo     # 仓储类
+```
+
+## 进阶使用
+
+### 多语言支持
+
+```bash
+# 发布语言文件
 php artisan vendor:publish --tag=rap-lang
-```
 
-包含:
+# 支持的语言包内容
 - 验证消息
 - 系统消息
 - 错误提示
-
-## 异常处理
-
-自定义异常类 `ApiException` 提供统一的异常处理:
-
-```php
-throw new ApiException('操作失败', ApiException::BAD_REQUEST);
 ```
 
-## 日志记录
-
-支持 SQL 查询日志记录,可在配置文件中开启:
+### 日志系统
 
 ```php
-'enable_sql_logging' => true
+# 日志类型
+- SQL 查询日志
+- 请求响应日志
+- 操作日志
+
+# 日志位置
+- SQL日志: storage/logs/sql/
+- 系统日志: storage/logs/laravel.log
 ```
 
+## 升级指南
+
+```bash
+# 1. 更新组件
+composer update chaihao/rap
+
+# 2. 发布新资源
+php artisan vendor:publish --tag=rap-config
+php artisan vendor:publish --tag=rap-migrations
+
+# 3. 执行迁移
+php artisan migrate
+```
+
+## 常见问题
+
+### 1. JWT 认证失败
+- 检查是否已生成 JWT 密钥
+- 确认 token 格式正确
+
+### 2. 权限验证失败
+- 检查用户权限分配
+- 确认权限名称正确
+
+### 3. 跨域问题
+- 检查 CORS 配置
+- 确认请求头设置
+
+## 参与贡献
+
+1. Fork 项目
+2. 创建分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送分支 (`git push origin feature/AmazingFeature`)
+5. 提交 PR
+
+## 更新日志
+
+### v1.0.0 (2024-03-20)
+- 初始版本发布
+- 基础功能实现
 
 ## 开源协议
 
@@ -190,4 +201,4 @@ MIT
 
 ## 技术支持
 
-如有问题,请提交 Issue 或联系技术支持。
+如有问题,请提交 [Issue](https://github.com/chaihao/rap/issues) 或联系技术支持。
