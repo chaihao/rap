@@ -3,7 +3,6 @@
 namespace  Chaihao\Rap\Services\Sys;
 
 use Chaihao\Rap\Exception\ApiException;
-use Chaihao\Rap\Jobs\AddPermissionJob;
 use Chaihao\Rap\Models\Auth\Staff;
 use Chaihao\Rap\Models\Sys\Permissions;
 use Chaihao\Rap\Models\Sys\Roles;
