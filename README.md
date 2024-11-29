@@ -27,7 +27,7 @@ RAP 是一个基于 Laravel 的后台管理系统组件包,提供完整的 RBAC 
 {
     "repositories": [
         {
-            "type": "vcs", // VCS (Version Control System) 表示版本控制系统
+            "type": "vcs",
             "url": "https://github.com/chaihao/rap.git"
         }
     ],

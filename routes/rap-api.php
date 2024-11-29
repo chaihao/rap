@@ -30,10 +30,10 @@ Route::prefix($prefix)->group(function () {
             Route::post('get_all_roles',  'getAllRoles')->name('获取所有角色');
             Route::post('assign_role',  'assignRole')->name('分配角色');
             Route::post('remove_role',  'removeRole')->name('移除角色');
+            Route::post('get_user_roles',  'getUserRoles')->name('获取用户角色');
             Route::post('sync_role_permissions',  'syncRolePermissions')->name('同步角色权限');
             Route::post('get_role_permissions',  'getRolePermissions')->name('获取角色权限');
             Route::post('get_user_permissions',  'getUserPermissions')->name('获取用户权限');
-            Route::post('get_user_roles',  'getUserRoles')->name('获取用户角色');
             Route::post('revoke_permission_to',  'revokePermissionTo')->name('撤销用户的指定权限');
             Route::post('sync_permissions',  'syncPermissions')->name('同步用户权限');
             Route::post('give_permission_to',  'givePermissionTo')->name('给用户直接分配权限');

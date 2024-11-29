@@ -382,26 +382,22 @@ if (!function_exists('request_by_curl')) {
 }
 
 
-/**
- * 获取当前登录用户ID
- */
 if (! function_exists('getUid')) {
     /**
-     * @throws \Psr\SimpleCache\InvalidArgumentException
+     * 获取当前登录用户ID
+     * @return int 用户ID，未登录返回0
      */
-    function getUid()
+    function getUid(): int
     {
         try {
-            auth(config('jwt.defaults.guard'))->check();
-            // 检查用户是否登录
-            $token = JWTAuth::parseToken(); // 解析 Token
-            $staff = $token->authenticate(); // 从 Token 获取用户信息
-            if ($staff) {
-                return $staff->getAttribute("id");
+            if (!auth(config('jwt.defaults.guard'))->check()) {
+                return 0;
             }
-            return 0;
+
+            $user = auth(config('jwt.defaults.guard'))->user();
+            return $user ? $user->id : 0;
         } catch (Exception $e) {
-            return  0;
+            return 0;
         }
     }
 }

@@ -13,10 +13,28 @@ class Staff extends Authenticatable implements JWTSubject
     use SoftDeletes, HasRoles;
     protected $table = 'staff';
 
-    protected $fillable = ["id", "phone", "password", "name", "email", "salt", "ip", "last_login_at", "sex", "is_super", "remark", "status"];
+    protected $fillable = ["id", "phone", "password", "name", "email", "salt", "avatar", "ip", "last_login_at", "sex", "is_super", "remark", "status"];
 
-    protected $casts = [];
+    protected $casts = [
+        'last_login_at' => 'datetime',
+        'is_super' => 'boolean',
+        'status' => 'integer',
+        'sex' => 'integer'
+    ];
 
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+
+        // 从配置中读取表名、字段和类型转换
+        $config = config('rap.models.staff');
+
+        if ($config) {
+            $this->table = $config['table'] ?? 'staff';
+            $this->fillable = $config['fillable'] ?? $this->fillable;
+            $this->casts = array_merge($this->casts, $config['casts'] ?? []);
+        }
+    }
 
     const DEFAULT_IS_SUPPER_YES = 1;
     const DEFAULT_IS_SUPPER_NO = 0;
@@ -28,6 +46,7 @@ class Staff extends Authenticatable implements JWTSubject
         "name" => "max:128",
         "email" => "max:255",
         "salt" => "max:255",
+        "avatar" => "max:255",
         "ip" => "max:16",
         "sex" => "in:0,1,2",
         "is_super" => "integer",
@@ -36,8 +55,8 @@ class Staff extends Authenticatable implements JWTSubject
     ];
 
     public $scenarios = [
-        'add' => ['phone', 'password', 'name', 'email', 'salt', 'ip', 'last_login_at', 'sex', 'is_super', 'remark', 'status'],
-        'edit' => ['id', 'phone', 'password', 'name', 'email', 'salt', 'ip', 'last_login_at', 'sex', 'is_super', 'remark', 'status'],
+        'add' => ['phone', 'password', 'name', 'email', 'salt', 'avatar', 'ip', 'last_login_at', 'sex', 'is_super', 'remark', 'status'],
+        'edit' => ['id', 'phone', 'password', 'name', 'email', 'salt', 'avatar', 'ip', 'last_login_at', 'sex', 'is_super', 'remark', 'status'],
         'delete' => ['id'],
         'detail' => ['id'],
         'status' => ['id', 'status'],
