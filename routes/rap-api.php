@@ -23,7 +23,7 @@ Route::prefix($prefix)->group(function () {
         });
 
         // 权限
-        Route::prefix('permission')->controller(\Chaihao\Rap\Http\Controllers\PermissionController::class)->name('权限管理.')->group(function () {
+        Route::middleware(['rap-api'])->prefix('permission')->controller(\Chaihao\Rap\Http\Controllers\PermissionController::class)->name('权限管理.')->group(function () {
             Route::post('add',  'addPermission')->name('添加权限');
             Route::post('get_all',  'getAllPermissions')->name('获取所有权限');
             Route::post('create_role',  'createRole')->name('创建角色');

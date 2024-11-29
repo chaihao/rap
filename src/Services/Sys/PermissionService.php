@@ -15,8 +15,12 @@ use Spatie\Permission\Models\Role;
 
 class PermissionService extends BaseService
 {
+   protected $model;
 
-   protected $model = app(config('rap.models.staff.class'));
+   public function __construct()
+   {
+      $this->model = app(config('rap.models.staff.class'));
+   }
 
    /**
     * 给用户直接分配权限
@@ -255,7 +259,8 @@ class PermissionService extends BaseService
             $existingPermission = $existingPermissions[$key];
             $this->updateExistingPermission($existingPermission, $routeInfo);
          } else {
-            // 收集新权限数据
+            // 手动将 middleware 数组转换为 JSON 字符串
+            $routeInfo['middleware'] = json_encode($routeInfo['middleware']);
             $routeInfo['created_at'] = now();
             $routeInfo['updated_at'] = now();
             $batchData[] = $routeInfo;
@@ -264,7 +269,6 @@ class PermissionService extends BaseService
 
       // 批量插入新权限
       if (!empty($batchData)) {
-         // 开发环境直接批量插入
          Permissions::insert($batchData);
       }
    }
@@ -340,7 +344,7 @@ class PermissionService extends BaseService
     */
    private function checkLoginRequired(array $middleware): int
    {
-      return in_array('routeGuard', $middleware) ? 1 : 0;
+      return (in_array('rap-api', $middleware) || in_array('check.auth', $middleware)) ? 1 : 0;
    }
 
    /**

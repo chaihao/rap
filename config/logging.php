@@ -21,7 +21,7 @@ return [
             'path' => storage_path('logs/sql/sql.log'),
             'level' => env('RAP_SQL_LOG_LEVEL', 'debug'),
             'days' => env('RAP_SQL_LOG_DAYS', 14),
-            'permission' => 0666,
+            'permission' => 0777,
         ],
     ],
 ];

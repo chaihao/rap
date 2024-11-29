@@ -35,6 +35,33 @@ RAP 是一个基于 Laravel 的后台管理系统组件包,提供完整的 RBAC 
         "chaihao/rap": "dev-main"
     }
 }
+
+
+
+{
+    "require": {
+        "php": "^8.2",
+        "laravel/framework": "^11.0",
+        "chaihao/rap": "dev-main"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Chaihao\\Rap\\": "rap/src/"
+        }
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "rap",
+            "options": {
+                "symlink": true 
+            }
+        }
+    ]
+}
+
+
 ```
 
 > **repositories 配置说明:**
@@ -233,3 +260,190 @@ MIT
 ## 技术支持
 
 如有问题,请提交 [Issue](https://github.com/chaihao/rap/issues) 或联系技术支持。
+
+# 中间件与异常处理使用指南
+
+## 中间件使用
+
+### 1. 核心中间件说明
+
+- `check.auth`: JWT 认证中间件
+- `permission`: 权限验证中间件  
+- `cors`: 跨域处理中间件
+- `request.response.logger`: 请求响应日志中间件
+- `upgrade`: 系统升级模式中间件
+
+### 2. 中间件使用方式
+
+#### 2.1 单个路由使用中间件
+
+Route::post('/user/profile', [UserController::class, 'profile'])
+    ->middleware(['check.auth']);
+```
+
+#### 2.2 路由组使用中间件
+
+```php 
+Route::middleware(['rap-api'])->group(function () {
+    Route::post('/order/create', [OrderController::class, 'create']);
+    Route::post('/order/cancel', [OrderController::class, 'cancel']);
+});
+```
+
+#### 2.3 排除中间件
+
+```php
+Route::withoutMiddleware(['permission'])->group(function () {
+    Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::post('/auth/register', [AuthController::class, 'register']);
+});
+```
+
+### 3. 自定义中间件
+
+```php
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+
+class CheckRole 
+{
+    public function handle(Request $request, Closure $next)
+    {
+        if (!$request->user()->hasRole('admin')) {
+            return response()->json([
+                'status' => false,
+                'code' => 403,
+                'message' => '需要管理员权限'
+            ]);
+        }
+        return $next($request);
+    }
+}
+```
+
+注册中间件:
+
+```php
+// app/Http/Kernel.php
+protected $routeMiddleware = [
+    'check.role' => \App\Http\Middleware\CheckRole::class
+];
+```
+
+## 异常处理
+
+### 1. ApiException 使用
+
+#### 1.1 基础异常
+
+```php
+// 抛出一般错误
+throw new ApiException('操作失败', ApiException::BAD_REQUEST);
+
+// 抛出未授权异常
+throw ApiException::unauthorized('请先登录');
+
+// 抛出资源未找到异常
+throw ApiException::notFound('订单不存在');
+
+// 抛出验证错误异常
+throw ApiException::validationError('验证失败', [
+    'name' => ['名称不能为空'],
+    'price' => ['价格必须大于0']
+]); 
+```
+
+#### 1.2 在控制器中使用
+
+```php
+public function create(Request $request)
+{
+    try {
+        // 验证参数
+        $this->checkValidator($request->all(), [
+            'product_id' => 'required|integer',
+            'quantity' => 'required|integer|min:1'
+        ]);
+        
+        // 检查商品
+        $product = Product::find($request->product_id);
+        if (!$product) {
+            throw ApiException::notFound('商品不存在');
+        }
+        
+        // 检查库存
+        if ($product->stock < $request->quantity) {
+            throw new ApiException('库存不足', ApiException::BAD_REQUEST);
+        }
+        
+        // 创建订单...
+        
+    } catch (ApiException $e) {
+        return $e->render();
+    }
+}
+```
+
+#### 1.3 在服务层使用
+
+```php
+public function createOrder(array $data)
+{
+    try {
+        DB::beginTransaction();
+        
+        // 检查用户余额
+        if ($this->getUserBalance() < $data['total_amount']) {
+            throw new ApiException('账户余额不足', ApiException::BAD_REQUEST);
+        }
+        
+        // 扣减库存
+        if (!$this->deductStock($data['product_id'], $data['quantity'])) {
+            throw new ApiException('库存扣减失败', ApiException::SERVER_ERROR);
+        }
+        
+        // 创建订单记录
+        $order = Order::create($data);
+        if (!$order) {
+            throw new ApiException('订单创建失败', ApiException::SERVER_ERROR);
+        }
+        
+        DB::commit();
+        return $this->success($order);
+        
+    } catch (\Exception $e) {
+        DB::rollBack();
+        throw new ApiException($e->getMessage(), ApiException::SERVER_ERROR);
+    }
+}
+```
+
+### 2. 错误码说明
+
+| 错误码 | 说明 | 使用场景 |
+|--------|------|----------|
+| 400 | 请求错误 | 参数错误、业务逻辑错误 |
+| 401 | 未授权 | 未登录、token失效 |
+| 403 | 禁止访问 | 无权限访问 |
+| 404 | 未找到 | 资源不存在 |
+| 422 | 验证错误 | 表单验证失败 |
+| 500 | 服务器错误 | 系统异常 |
+
+### 3. 调试模式
+
+在 `.env` 中设置 `APP_DEBUG=true` 时,异常响应会包含调试信息:
+
+```json
+{
+    "success": false,
+    "code": 500,
+    "message": "系统错误",
+    "debug": {
+        "file": "/app/Services/OrderService.php",
+        "line": 100,
+        "trace": [...]
+    }
+}
+```

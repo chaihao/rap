@@ -9,9 +9,12 @@ class CurrentStaffService extends BaseService
 {
    private $staff = null;
 
-   public function setStaff(?Staff $staff): void
+   public function setStaff($staff): void
    {
-      $this->staff = $staff;
+      $staffClass = config('rap.models.staff.class');
+      if ($staff !== false && ($staff === null || $staff instanceof $staffClass)) {
+         $this->staff = $staff;
+      }
    }
 
    public function getStaff(): ?Staff

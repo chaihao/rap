@@ -110,11 +110,12 @@ class RapServiceProvider extends ServiceProvider
         // 注册全局中间件
         $kernel = $this->app->make(\Illuminate\Contracts\Http\Kernel::class);
         $kernel->pushMiddleware(\Chaihao\Rap\Http\Middleware\BaseMiddleware::class);
+        $kernel->pushMiddleware(\Chaihao\Rap\Http\Middleware\Cors::class);
+        $kernel->pushMiddleware(\Chaihao\Rap\Http\Middleware\Upgrade::class);
 
         // 注册路由中间件
         $router->aliasMiddleware('check.auth', \Chaihao\Rap\Http\Middleware\CheckAuth::class);
         $router->aliasMiddleware('permission', \Chaihao\Rap\Http\Middleware\PermissionMiddleware::class);
-        $router->aliasMiddleware('cors', \Chaihao\Rap\Http\Middleware\Cors::class);
         $router->aliasMiddleware('request.response.logger', \Chaihao\Rap\Http\Middleware\RequestResponseLogger::class);
 
         // 注册中间件组
@@ -122,7 +123,6 @@ class RapServiceProvider extends ServiceProvider
             'check.auth',
             'permission',
             // 'throttle:api',
-            'cors',
             'request.response.logger',
         ]);
     }

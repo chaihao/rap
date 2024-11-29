@@ -28,15 +28,21 @@ class CheckAuth
 
         try {
             // 解析并验证 JWT 令牌
-            $staff = JWTAuth::parseToken()->authenticate();
+            if (!$token = JWTAuth::parseToken()) {
+                return $this->unauthorizedResponse('无效的令牌');
+            }
 
-            CurrentStaff::setStaff($staff);
-            // 如果未找到用户，返回未授权响应
+            $staff = auth($guard)->user();
+
             if (!$staff) {
                 return $this->unauthorizedResponse('用户未登录或会话已过期');
             }
+            $staffClass = config('rap.models.staff.class');
+            if (!($staff instanceof $staffClass)) {
+                return $this->unauthorizedResponse('无效的用户类型');
+            }
 
-            // 用户验证成功，将用户信息添加到请求中
+            CurrentStaff::setStaff((object)$staff);
             $request->merge(['auth_staff' => $staff]);
         } catch (JWTException $e) {
             // 处理 JWT 相关异常

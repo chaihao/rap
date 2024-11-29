@@ -68,19 +68,6 @@ class PermissionController extends BaseController
     }
 
 
-
-    /**
-     * 分配权限
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function assignPermission(): JsonResponse
-    {
-        $this->checkValidator($this->request->all(), ['id' => 'required|integer', 'permissions' => 'required|array']);
-        $this->service->assignPermission($this->request->id, $this->request->permissions);
-        return $this->success('权限分配成功');
-    }
-
-
     /**
      * 获取用户的所有角色
      * @return \Illuminate\Http\JsonResponse

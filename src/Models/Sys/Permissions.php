@@ -13,7 +13,7 @@ class Permissions extends Permission
 
     protected $fillable = ["id", "name", "method", "uri", "controller", "action", "slug", "prefix", "guard_name", "middleware", "group", "group_name", "is_login", "status"];
 
-    protected $casts = ["middleware" => "array",];
+    protected $casts = ["middleware" => "array"];
 
     public $rules = [
         "name" => "required|max:255",
