@@ -23,6 +23,8 @@ RAP 是一个基于 Laravel 的后台管理系统组件包,提供完整的 RBAC 
 
 在主项目的 `composer.json` 文件中添加以下配置：
 
+> **方式一:**
+
 ```json
 {
     "repositories": [
@@ -35,9 +37,15 @@ RAP 是一个基于 Laravel 的后台管理系统组件包,提供完整的 RBAC 
         "chaihao/rap": "dev-main"
     }
 }
+```
 
+> **方式二:**
 
+```bash
+git clone https://github.com/chaihao/rap.git
+```
 
+```json
 {
     "require": {
         "php": "^8.2",

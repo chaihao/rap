@@ -112,40 +112,26 @@ abstract class BaseModel extends Model
 
     /**
      * 模型启动时注册事件监听
-     * 当启用缓存时,在模型创建/更新/删除时自动清除缓存
      */
     protected static function boot()
     {
         parent::boot();
-
-        // 获取模型实例来检查缓存配置
+        // 注册缓存事件
         $instance = new static;
-
-        if ($instance->shouldCache()) {
-            // 创建时清除缓存
-            static::creating(function ($model) {
-                $model->flushCache();
-            });
-
-            // 更新时清除缓存
-            static::updating(function ($model) {
-                $model->flushCache();
-            });
-
-            // 删除时清除缓存
-            static::deleting(function ($model) {
-                $model->flushCache();
-            });
-        }
+        $instance->registerCacheEvents();
     }
 
     /**
-     * 清除所有相关缓存
+     * 注册缓存事件处理
+     * 子类可以重写此方法来实现自定义的缓存清理逻辑
      */
-    public function flushCache(): void
+    protected function registerCacheEvents(): void
     {
+        // 基类提供默认的缓存清理实现
         if ($this->shouldCache()) {
-            Cache::tags($this->getTable())->flush();
+            static::created(fn($model) => $model->clearCache('list'));
+            static::updated(fn($model) => $model->clearCache('list'));
+            static::deleted(fn($model) => $model->clearCache('list'));
         }
     }
 

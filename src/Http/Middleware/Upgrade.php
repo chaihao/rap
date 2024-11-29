@@ -19,7 +19,7 @@ class Upgrade
             return response()->json([
                 'status'   => false,
                 'code'      => 400,
-                'message'   => '系统正在升级，请稍后操作'
+                'message'   => '系统正在升级，请稍后操作...'
             ]);
         }
         return $next($request);

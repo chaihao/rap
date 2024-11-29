@@ -34,7 +34,7 @@ return new class extends Migration {
             $table->index('parent_code', 'idx_parent_code');
         });
 
-        Schema::create('staff', function (Blueprint $table) {
+        Schema::create(config('rap.models.staff.table'), function (Blueprint $table) {
             $table->id();
             $table->string('phone', 11)->default('')->comment('手机号');
             $table->string('password', 255)->comment('密码');

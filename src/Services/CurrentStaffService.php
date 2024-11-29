@@ -33,7 +33,7 @@ class CurrentStaffService extends BaseService
    }
 
    // 检查当前用户是否为超级管理员
-   public function checkIsSuper(): bool
+   public function isSuper(): bool
    {
       if (!$this->staff->is_super) {
          return false;
@@ -42,7 +42,7 @@ class CurrentStaffService extends BaseService
    }
 
    // 检查当前用户是否为管理员
-   public function checkIsAdmin(): bool
+   public function isAdmin(): bool
    {
       if (!$this->hasRole('admin') && !$this->staff->is_super) {
          return false;
