@@ -61,6 +61,9 @@ abstract class BaseService
      */
     protected function fetchListData(array $params): array
     {
+        // 应用自定义查询条件
+        $params = $this->customListQuery($params);
+
         $query = $this->getModel()->newQuery();
 
         // 应用基础查询
@@ -80,6 +83,13 @@ abstract class BaseService
         return $this->formatListOutput($data);
     }
 
+    /**
+     * 自定义列表查询条件
+     */
+    public function customListQuery(array $params): array
+    {
+        return $params;
+    }
 
 
     /**
@@ -194,17 +204,71 @@ abstract class BaseService
         try {
             DB::beginTransaction();
 
+            // 验证数据
             if ($validate) {
                 $this->checkValidator($data, 'add');
             }
 
+            // 添加前的数据处理
+            $data = $this->beforeAdd($data);
+
+            // 格式化数据
             $data = $this->getModel()->formatAttributes($data);
+            // 过滤可填充数据
             $fillableData = $this->filterFillableData($data);
 
+            // 添加创建者ID
             $this->addCreatorId($fillableData);
 
+            // 创建记录
             $record = $this->getModel()->create($fillableData);
 
+            // 清除缓存
+            $this->clearModelCache();
+
+            DB::commit();
+            return $this->success($record);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw new ApiException($e->getMessage());
+        }
+    }
+
+    /**
+     * 添加前的数据处理
+     */
+    public function beforeAdd(array $data): array
+    {
+        return $data;
+    }
+    /**
+     * 更新记录
+     */
+    public function edit(int $id, array $data): array
+    {
+        try {
+            DB::beginTransaction();
+
+            // 查找记录
+            $record = $this->findRecord($id);
+            if (!$record) {
+                throw new ApiException('记录不存在');
+            }
+
+            // 编辑前的数据处理
+            $data = $this->beforeEdit($data);
+
+            // 格式化数据
+            $data = $this->getModel()->formatAttributes($data);
+            // 过滤可填充数据
+            $fillableData = $this->filterFillableData($data);
+            // 添加更新者ID
+            $this->addUpdaterId($fillableData);
+
+            // 更新记录
+            $record->update($fillableData);
+
+            // 清除缓存
             $this->clearModelCache();
 
             DB::commit();
@@ -215,35 +279,11 @@ abstract class BaseService
         }
     }
     /**
-     * 更新记录
+     * 编辑前的数据处理
      */
-    public function edit(int $id, array $data): array
+    public function beforeEdit(array $data): array
     {
-        try {
-            DB::beginTransaction();
-
-            $record = $this->findRecord($id);
-            if (!$record) {
-                throw new ApiException('记录不存在');
-            }
-
-            // $this->checkValidator(array_merge(['id' => $id], $data), 'edit');
-
-            $data = $this->getModel()->formatAttributes($data);
-            $fillableData = $this->filterFillableData($data);
-
-            $this->addUpdaterId($fillableData);
-
-            $record->update($fillableData);
-
-            $this->clearModelCache();
-
-            DB::commit();
-            return $this->success($record);
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            throw new ApiException($e->getMessage());
-        }
+        return $data;
     }
 
 
@@ -336,6 +376,7 @@ abstract class BaseService
      */
     protected function addUpdaterId(array &$data): void
     {
+        // 如果不需要记录操作者,则不添加更新者ID
         if (!$this->getModel()->shouldRecordOperator()) {
             return;
         }
@@ -899,7 +940,8 @@ abstract class BaseService
 
         $validator = Validator::make($data, $rules, $message);
         if ($validator->fails()) {
-            throw new ApiException($validator->errors()->first() ?? [], 400);
+            // throw new ApiException($validator->errors()->first() ?? [], 400);
+            throw ApiException::validationError($validator->errors()->first() ?? []);
         }
     }
 
@@ -996,6 +1038,7 @@ abstract class BaseService
      */
     public function findRecord(int $id): ?Model
     {
+        // 查找记录
         $query = $this->getModel()->newQuery();
         if (method_exists($this->getModel(), 'scopeGetCreateBy')) {
             $query->getCreateBy();

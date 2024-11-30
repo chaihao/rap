@@ -101,6 +101,12 @@ class ApiException extends Exception
         return new static($message, self::FORBIDDEN);
     }
 
+    public static function failed(string $message = '操作失败'): static
+    {
+        return new static($message, self::BAD_REQUEST);
+    }
+
+
     /**
      * 从其他异常创建 ApiException
      */

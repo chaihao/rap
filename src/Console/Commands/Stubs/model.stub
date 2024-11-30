@@ -1,6 +1,6 @@
 <?php
 
-namespace  DummyNamespace;
+namespace DummyNamespace;
 
 use Chaihao\Rap\Models\BaseModel;
 USE_SOFT_DELETES_STATEMENT
@@ -8,17 +8,63 @@ USE_SOFT_DELETES_STATEMENT
 class DummyClass extends BaseModel
 {
     USE_SOFT_DELETES
+    
+    /**
+     * 表名(不含前缀)
+     */
     protected $table = 'TABLE';
 
-    protected $fillable = [ FILLABLE ];
+    /**
+     * 可批量赋值的属性
+     */
+    protected $fillable = [FILLABLE];
 
-    protected $casts = [ CASTS ];
+    /**
+     * 数据类型转换
+     */
+    protected $casts = [CASTS];
 
+    /**
+     * 验证规则
+     */
     public $rules = [
-      RULES
+        RULES
     ];
 
+    /**
+     * 场景验证规则
+     */
     public $scenarios = [
         SCENARIOS
     ];
+
+    /**
+     * 自定义列表展示字段
+     */
+    public function getListFields(): array
+    {
+        return array_merge(parent::getListFields(), [
+            // 在此添加额外的列表字段
+        ]);
+    }
+
+    /**
+     * 自定义详情展示字段
+     */
+    public function getDetailFields(): array
+    {
+        return parent::getDetailFields();
+    }
+
+    /**
+     * 格式化输出
+     */
+    public function formatOutput(array $data): array
+    {
+        $data = parent::formatOutput($data);
+        
+        // 在此添加自定义格式化逻辑
+        
+        return $data;
+    }
 }

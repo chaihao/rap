@@ -28,9 +28,7 @@ class MakeController extends GeneratorCommand
     protected $type = 'Controller';  // command type
 
 
-    protected $needFunctionNameList = false;
-
-    protected $signature = 'make:controller {name} {--with-functions : Include predefined functions}';
+    protected $signature = 'make:controller {name}';
 
     protected function getStub()
     {
@@ -74,11 +72,7 @@ class MakeController extends GeneratorCommand
         $stub = str_replace('TABLE_NAME', $modelNameSnakeCase, $stub);
         $stub = str_replace('DummyModel', $modelName . 'Model', $stub);
         $stub = str_replace('DummyService', $modelName . 'Service', $stub);
-        if ($this->needFunctionNameList) {
-            $stub = str_replace('FUNCTION_NAME_LIST', $this->getFunctionNameList(), $stub);
-        } else {
-            $stub = str_replace('FUNCTION_NAME_LIST', '', $stub);
-        }
+
         return $stub;
     }
 
@@ -132,7 +126,6 @@ class MakeController extends GeneratorCommand
      */
     public function handle()
     {
-        $this->needFunctionNameList = $this->option('with-functions');
         $name = $this->qualifyClass($this->getNameInput());
         $path = $this->getPath($name);
 
@@ -175,135 +168,5 @@ class MakeController extends GeneratorCommand
     {
         $this->makeDirectory($path);
         $this->files->put($path, $this->buildClass($name));
-    }
-
-
-
-
-    public function getFunctionNameList()
-    {
-        $functionNameList = "
-        /**
-         * 获取列表
-         * @throws \Exception
-         * @return JsonResponse
-         */
-        public function list(): JsonResponse
-        {
-            try {
-                \$params = \$this->request->all();
-                \$data = \$this->service->getList(\$params);
-                if (!\$data['status']) {
-                    throw new Exception(\$data['msg']);
-                }
-                return \$this->success(\$data['data']);
-            } catch (\Throwable \$th) {
-                return \$this->failed(\$th->getMessage());
-            }
-        }
-
-        /**
-         * 添加数据
-         * @throws \Exception
-         * @return JsonResponse
-         */
-        public function add(): JsonResponse
-        {
-            try {
-                \$params = \$this->request->all();
-                \$this->service->checkValidator(\$params, 'add');
-                \$data = \$this->service->add(\$params);
-                if (!\$data['status']) {
-                    throw new Exception(\$data['msg']);
-                }
-                return \$this->success([], \$data['msg']);
-            } catch (\Throwable \$th) {
-                return \$this->failed(\$th->getMessage());
-            }
-        }
-
-        /**
-         * 删除数据
-         * @throws \Exception
-         * @return \Illuminate\Http\JsonResponse
-         */
-        public function del(): JsonResponse
-        {
-            try {
-                \$params = \$this->request->all();
-                \$this->service->checkValidator(\$params, 'delete');
-                \$data = \$this->service->del(\$params['id']);
-                if (!\$data['status']) {
-                    throw new Exception(\$data['msg']);
-                }
-            } catch (\Throwable \$th) {
-                return \$this->failed(\$th->getMessage());
-            }
-            return \$this->message(\$data['msg']);
-        }
-
-        /**
-         * 编辑状态
-         * @throws \Exception
-         * @return \Illuminate\Http\JsonResponse
-         */
-        public function editStatus(): JsonResponse
-        {
-            try {
-                \$params = \$this->request->all();
-                \$this->service->checkValidator(\$params, 'status');
-                \$data = \$this->service->editStatus(\$params['id'], \$params['status'] ?? null);
-                if (!\$data['status']) {
-                    throw new Exception(\$data['msg']);
-                }
-            } catch (\Throwable \$th) {
-                return \$this->failed(\$th->getMessage());
-            }
-            return \$this->message(\$data['msg']);
-        }
-
-        /**
-         * 编辑数据
-         * @throws \Exception
-         * @return \Illuminate\Http\JsonResponse
-         */
-        public function edit(): JsonResponse
-        {
-            try {
-                \$params = \$this->request->all();
-                \$this->service->checkValidator(\$params, 'edit');
-                \$data = \$this->service->edit(\$params['id'], \$params);
-                if (!\$data['status']) {
-                    throw new Exception(\$data['msg']);
-                }
-                return \$this->success([], \$data['msg']);
-            } catch (\Throwable \$th) {
-                return \$this->failed(\$th->getMessage());
-            }
-        }
-
-        /**
-         * 获取详细数据
-         * @throws \Exception
-         * @return \Illuminate\Http\JsonResponse
-         */
-        public function get(): JsonResponse
-        {
-            try {
-                \$params = \$this->request->all();
-                \$this->service->checkValidator(\$params, 'get');
-                \$data = \$this->service->get(\$params['id']);
-                if (!\$data['status']) {
-                    throw new Exception(\$data['msg']);
-                }
-            } catch (\Throwable \$th) {
-                return \$this->failed(\$th->getMessage());
-            }
-
-            return \$this->success(\$data['data']);
-        }
-        ";
-
-        return $functionNameList;
     }
 }

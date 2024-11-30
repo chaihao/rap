@@ -111,6 +111,19 @@ php artisan jwt:secret
 ### 3. 环境变量配置
 
 ```env
+
+# 时区配置
+APP_TIMEZONE=PRC
+
+# 语言配置
+APP_LOCALE=zh_CN
+APP_FALLBACK_LOCALE=zh
+APP_FAKER_LOCALE=zh-CN
+
+# 缓存配置
+CACHE_STORE=redis
+CACHE_PREFIX=
+
 # API 配置
 RAP_API_PREFIX=api        # API 路由前缀
 RAP_API_GUARD=api        # API 认证守卫
@@ -162,6 +175,7 @@ throw new ApiException('操作失败', ApiException::BAD_REQUEST);
 - VALIDATION_ERROR (422) # 验证错误
 - SERVER_ERROR (500)    # 服务器错误
 ```
+[更多异常处理](Readme-ApiException.md)
 
 ### 中间件
 
@@ -182,6 +196,8 @@ throw new ApiException('操作失败', ApiException::BAD_REQUEST);
 ]
 ```
 
+[更多中间件配置](Readme-Middleware.md)
+
 ### 代码生成器
 
 ```bash
@@ -197,7 +213,7 @@ php artisan make:repositories UserRepo     # 仓储类
 ### 多语言支持
 
 ```bash
-# 发布语言文件
+# 发布语言文件 (可选)
 php artisan vendor:publish --tag=rap-lang
 
 # 支持的语言包内容
@@ -247,14 +263,6 @@ php artisan migrate
 - 检查 CORS 配置
 - 确认请求头设置
 
-## 参与贡献
-
-1. Fork 项目
-2. 创建分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送分支 (`git push origin feature/AmazingFeature`)
-5. 提交 PR
-
 ## 更新日志
 
 ### v1.0.0 (2024-03-20)
@@ -268,190 +276,3 @@ MIT
 ## 技术支持
 
 如有问题,请提交 [Issue](https://github.com/chaihao/rap/issues) 或联系技术支持。
-
-# 中间件与异常处理使用指南
-
-## 中间件使用
-
-### 1. 核心中间件说明
-
-- `check.auth`: JWT 认证中间件
-- `permission`: 权限验证中间件  
-- `cors`: 跨域处理中间件
-- `request.response.logger`: 请求响应日志中间件
-- `upgrade`: 系统升级模式中间件
-
-### 2. 中间件使用方式
-
-#### 2.1 单个路由使用中间件
-
-Route::post('/user/profile', [UserController::class, 'profile'])
-    ->middleware(['check.auth']);
-```
-
-#### 2.2 路由组使用中间件
-
-```php 
-Route::middleware(['rap-api'])->group(function () {
-    Route::post('/order/create', [OrderController::class, 'create']);
-    Route::post('/order/cancel', [OrderController::class, 'cancel']);
-});
-```
-
-#### 2.3 排除中间件
-
-```php
-Route::withoutMiddleware(['permission'])->group(function () {
-    Route::post('/auth/login', [AuthController::class, 'login']);
-    Route::post('/auth/register', [AuthController::class, 'register']);
-});
-```
-
-### 3. 自定义中间件
-
-```php
-namespace App\Http\Middleware;
-
-use Closure;
-use Illuminate\Http\Request;
-
-class CheckRole 
-{
-    public function handle(Request $request, Closure $next)
-    {
-        if (!$request->user()->hasRole('admin')) {
-            return response()->json([
-                'status' => false,
-                'code' => 403,
-                'message' => '需要管理员权限'
-            ]);
-        }
-        return $next($request);
-    }
-}
-```
-
-注册中间件:
-
-```php
-// app/Http/Kernel.php
-protected $routeMiddleware = [
-    'check.role' => \App\Http\Middleware\CheckRole::class
-];
-```
-
-## 异常处理
-
-### 1. ApiException 使用
-
-#### 1.1 基础异常
-
-```php
-// 抛出一般错误
-throw new ApiException('操作失败', ApiException::BAD_REQUEST);
-
-// 抛出未授权异常
-throw ApiException::unauthorized('请先登录');
-
-// 抛出资源未找到异常
-throw ApiException::notFound('订单不存在');
-
-// 抛出验证错误异常
-throw ApiException::validationError('验证失败', [
-    'name' => ['名称不能为空'],
-    'price' => ['价格必须大于0']
-]); 
-```
-
-#### 1.2 在控制器中使用
-
-```php
-public function create(Request $request)
-{
-    try {
-        // 验证参数
-        $this->checkValidator($request->all(), [
-            'product_id' => 'required|integer',
-            'quantity' => 'required|integer|min:1'
-        ]);
-        
-        // 检查商品
-        $product = Product::find($request->product_id);
-        if (!$product) {
-            throw ApiException::notFound('商品不存在');
-        }
-        
-        // 检查库存
-        if ($product->stock < $request->quantity) {
-            throw new ApiException('库存不足', ApiException::BAD_REQUEST);
-        }
-        
-        // 创建订单...
-        
-    } catch (ApiException $e) {
-        return $e->render();
-    }
-}
-```
-
-#### 1.3 在服务层使用
-
-```php
-public function createOrder(array $data)
-{
-    try {
-        DB::beginTransaction();
-        
-        // 检查用户余额
-        if ($this->getUserBalance() < $data['total_amount']) {
-            throw new ApiException('账户余额不足', ApiException::BAD_REQUEST);
-        }
-        
-        // 扣减库存
-        if (!$this->deductStock($data['product_id'], $data['quantity'])) {
-            throw new ApiException('库存扣减失败', ApiException::SERVER_ERROR);
-        }
-        
-        // 创建订单记录
-        $order = Order::create($data);
-        if (!$order) {
-            throw new ApiException('订单创建失败', ApiException::SERVER_ERROR);
-        }
-        
-        DB::commit();
-        return $this->success($order);
-        
-    } catch (\Exception $e) {
-        DB::rollBack();
-        throw new ApiException($e->getMessage(), ApiException::SERVER_ERROR);
-    }
-}
-```
-
-### 2. 错误码说明
-
-| 错误码 | 说明 | 使用场景 |
-|--------|------|----------|
-| 400 | 请求错误 | 参数错误、业务逻辑错误 |
-| 401 | 未授权 | 未登录、token失效 |
-| 403 | 禁止访问 | 无权限访问 |
-| 404 | 未找到 | 资源不存在 |
-| 422 | 验证错误 | 表单验证失败 |
-| 500 | 服务器错误 | 系统异常 |
-
-### 3. 调试模式
-
-在 `.env` 中设置 `APP_DEBUG=true` 时,异常响应会包含调试信息:
-
-```json
-{
-    "success": false,
-    "code": 500,
-    "message": "系统错误",
-    "debug": {
-        "file": "/app/Services/OrderService.php",
-        "line": 100,
-        "trace": [...]
-    }
-}
-```

@@ -18,11 +18,11 @@ class StaffService extends BaseService
       $user = Staff::query()->where('phone', $params['phone'])->first();
 
       if (!$user) {
-         return $this->failed('账号不存在');
+         throw ApiException::notFound('账号不存在');
       }
 
       if (!$user || !$user->verifyPassword($params['password'])) {
-         return $this->failed('账号或密码错误');
+         throw ApiException::failed('账号或密码错误');
       }
 
       $user->ip = request()->getClientIp();
