@@ -91,7 +91,7 @@ class ArticleService extends BaseService
     /**
      * 重写编辑方法,展示了文件更新处理
      */
-    public function edit(int $id, array $data): array
+    public function edit(int $id, array $data)
     {
         // 处理封面图上传
         if (isset($data['cover_image']) && is_uploaded_file($data['cover_image'])) {

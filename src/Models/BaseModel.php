@@ -212,18 +212,6 @@ abstract class BaseModel extends Model
      */
     public function formatOutput(array $data): array
     {
-        // 格式化状态显示
-        if (isset($data['status'])) {
-            $data['status_text'] = self::getStatusList()[$data['status']] ?? '';
-        }
-
-        // 处理时间格式
-        foreach (['created_at', 'updated_at', 'deleted_at'] as $field) {
-            if (isset($data[$field]) && $data[$field]) {
-                $data[$field] = date('Y-m-d H:i:s', strtotime($data[$field]));
-            }
-        }
-
         return $data;
     }
 

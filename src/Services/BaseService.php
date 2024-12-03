@@ -59,7 +59,7 @@ abstract class BaseService
     /**
      * 获取列表数据
      */
-    protected function fetchListData(array $params): array
+    protected function fetchListData(array $params)
     {
         // 应用自定义查询条件
         $params = $this->customListQuery($params);
@@ -80,7 +80,26 @@ abstract class BaseService
         $data = $query->paginate($pageSize);
 
         // 格式化输出
-        return $this->formatListOutput($data);
+        $this->formatListOutput($data);
+
+        return paginateFormat($data);
+    }
+
+
+
+    /**
+     * 处理查询结果
+     * 
+     * @param \Illuminate\Pagination\LengthAwarePaginator $data 分页数据
+     */
+    protected function formatListOutput($data): void
+    {
+        if (!$data->isEmpty()) {
+            // 修改为使用闭包函数调用 processFields
+            $data->setCollection($data->getCollection()->map(function ($item) {
+                return $this->getModel()->formatOutput($item);
+            }));
+        }
     }
 
     /**
@@ -184,18 +203,7 @@ abstract class BaseService
             $query->orderBy('id', 'desc');
         }
     }
-    /**
-     * 格式化列表输出
-     */
-    protected function formatListOutput($data): array
-    {
-        $result = $data->toArray();
-        $result['data'] = array_map(function ($item) {
-            return $this->getModel()->formatOutput($item);
-        }, $result['data']);
 
-        return $result;
-    }
     /**
      * 创建记录
      */
@@ -227,7 +235,7 @@ abstract class BaseService
             $this->clearModelCache();
 
             DB::commit();
-            return $this->success($record);
+            return $record;
         } catch (\Throwable $e) {
             DB::rollBack();
             throw new ApiException($e->getMessage());
@@ -244,7 +252,7 @@ abstract class BaseService
     /**
      * 更新记录
      */
-    public function edit(int $id, array $data): array
+    public function edit(int $id, array $data)
     {
         try {
             DB::beginTransaction();
@@ -272,7 +280,7 @@ abstract class BaseService
             $this->clearModelCache();
 
             DB::commit();
-            return $this->success($record);
+            return $record;
         } catch (\Throwable $e) {
             DB::rollBack();
             throw new ApiException($e->getMessage());
@@ -645,7 +653,7 @@ abstract class BaseService
             // 格式化数据
             $info = $this->formatData($info);
 
-            return $this->success($info);
+            return $info;
         } catch (ApiException $e) {
             throw $e;
         } catch (\Throwable $th) {
