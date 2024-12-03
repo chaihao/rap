@@ -21,75 +21,10 @@ RAP 是一个基于 Laravel 的后台管理系统组件包,提供完整的 RBAC 
 
 ### 1. 安装
 
-在主项目的 `composer.json` 文件中添加以下配置：
-
-> **方式一:**
-
-```json
-{
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/chaihao/rap.git"
-        }
-    ],
-    "require": {
-        "chaihao/rap": "dev-main"
-    }
-}
-```
-
-> **方式二:**
-
 ```bash
-git clone https://github.com/chaihao/rap.git
+composer require chaihao/laravel-rap-admin
 ```
 
-```json
-{
-    "require": {
-        "php": "^8.2",
-        "laravel/framework": "^11.0",
-        "chaihao/rap": "dev-main"
-    },
-    "autoload": {
-        "psr-4": {
-            "App\\": "app/",
-            "Chaihao\\Rap\\": "rap/src/"
-        }
-    },
-    "repositories": [
-        {
-            "type": "path",
-            "url": "rap",
-            "options": {
-                "symlink": true 
-            }
-        }
-    ]
-}
-
-
-```
-
-> **repositories 配置说明:**
-> - `type: "vcs"` - 支持从版本控制系统获取包
->   - 支持的 VCS: git, svn, hg (mercurial)
->   - 自动检测版本控制系统类型
->   - 可以是 GitHub, GitLab, Bitbucket 等托管的仓库
-> - 私有仓库需要确保有访问权限
-> - 建议使用 HTTPS 或 SSH 链接
-
-然后运行以下命令仅安装/更新 rap 组件：
-
-```bash
-composer update chaihao/rap --with-dependencies
-```
-
-> **注意:** 
-> - 使用 `composer update` 会更新所有依赖包
-> - 使用 `composer update chaihao/rap --with-dependencies` 只会更新 rap 组件及其依赖
-> - 首次安装也可以直接使用 `composer require chaihao/rap`
 
 ### 2. 基础配置
 
