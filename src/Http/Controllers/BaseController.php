@@ -54,7 +54,7 @@ abstract class BaseController extends Controller
             $params = $this->request->all();
             // 验证数据
             $this->checkValidator($params, 'add');
-            
+
             $data = $this->service->add($params);
             return $this->success($data);
         } catch (\Throwable $e) {
@@ -70,10 +70,10 @@ abstract class BaseController extends Controller
         try {
             $params = $this->request->all();
             $params['id'] = $id;
-            
+
             // 验证数据
             $this->checkValidator($params, 'edit');
-            
+
             $data = $this->service->edit($id, $params);
             return $this->success($data);
         } catch (\Throwable $e) {
@@ -89,7 +89,7 @@ abstract class BaseController extends Controller
         try {
             // 验证ID
             $this->checkValidator(['id' => $id], 'delete');
-            
+
             $this->service->delete($id);
             return $this->success(null, '删除成功');
         } catch (\Throwable $e) {
@@ -105,7 +105,7 @@ abstract class BaseController extends Controller
         try {
             // 验证ID
             $this->checkValidator(['id' => $id], 'detail');
-            
+
             $data = $this->service->detail($id);
             return $this->success($data);
         } catch (\Throwable $e) {
@@ -194,8 +194,8 @@ abstract class BaseController extends Controller
             case 'delete':
             case 'detail':
             case 'status':
-                return $field === 'id' 
-                    ? 'required|integer|exists:' . $this->model->getTable() . ',id' 
+                return $field === 'id'
+                    ? 'required|integer|exists:' . $this->model->getTable() . ',id'
                     : $rule;
             case 'add':
                 return $this->adjustRuleForAdd($rule, $field);
@@ -277,7 +277,7 @@ abstract class BaseController extends Controller
         try {
             // 验证ID
             $this->checkValidator(['id' => $id], 'status');
-            
+
             $status = $this->request->input('status');
             $data = $this->service->editStatus($id, $status);
             return $this->success($data);

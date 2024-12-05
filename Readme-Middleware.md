@@ -12,7 +12,7 @@
 ### 2. 中间件使用方式
 
 #### 2.1 单个路由使用中间件
-
+```
 Route::post('/user/profile', [UserController::class, 'profile'])
     ->middleware(['check.auth']);
 ```
@@ -26,10 +26,24 @@ Route::middleware(['rap-api'])->group(function () {
 });
 ```
 
-#### 2.3 排除中间件
+#### 2.3 指定角色或权限
 
 ```php
-Route::withoutMiddleware(['permission'])->group(function () {
+// 检测当前路由权限 -- 默认检查权限, 如果指定角色, 则同时检查角色和权限
+Route::middleware(['rap-api', 'permission'])->group(function () {
+    Route::post('/order/create', [OrderController::class, 'create']);
+});
+
+// 指定角色 -- 同时检查角色和权限 -- 角色优先级高于权限 -- 符合任意一个即可 -- 'permission:admin' 表示角色为 admin 的用户可以访问
+Route::middleware(['rap-api', 'permission:admin'])->group(function () {
+    Route::post('/order/create', [OrderController::class, 'create']);
+});
+```
+
+#### 2.4 排除中间件
+
+```php
+Route::withoutMiddleware(['permission', 'check.auth'])->group(function () {
     Route::post('/auth/login', [AuthController::class, 'login']);
     Route::post('/auth/register', [AuthController::class, 'register']);
 });

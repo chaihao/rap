@@ -12,7 +12,7 @@ Route::prefix($prefix)->group(function () {
     });
 
     // 需要验证的路由使用 rap-api 中间件组
-    Route::middleware('rap-api')->group(function () {
+    Route::middleware(['rap-api', 'permission'])->group(function () {
         // 员工
         Route::prefix('auth')->controller(\Chaihao\Rap\Http\Controllers\StaffController::class)->name('员工管理.')->group(function () {
             Route::post('staff_info', 'staffInfo')->name('获取员工信息');

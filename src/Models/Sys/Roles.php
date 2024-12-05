@@ -2,10 +2,9 @@
 
 namespace  Chaihao\Rap\Models\Sys;
 
-use Chaihao\Rap\Models\BaseModel;
+use Spatie\Permission\Models\Role;
 
-
-class Roles extends BaseModel
+class Roles extends Role
 {
 
     protected $table = 'roles';

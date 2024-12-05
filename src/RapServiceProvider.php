@@ -31,9 +31,6 @@ class RapServiceProvider extends ServiceProvider
             $this->commands($kernel->all());
         }
 
-        // 注册 AppServiceProvider
-        $this->app->register(\Chaihao\Rap\Providers\AppServiceProvider::class);
-
         // 修改 auth 配置合并方式
         $this->app->booting(function () {
             $config = $this->app['config']->get('auth', []);
@@ -95,14 +92,6 @@ class RapServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/../config/jwt.php' => config_path('jwt.php'),
         ], 'rap-config-jwt');
-
-        // 加载语言文件
-        $this->loadTranslationsFrom(__DIR__ . '/resources/lang', 'rap');
-
-        // 发布语言文件
-        $this->publishes([
-            __DIR__ . '/resources/lang' => resource_path('lang'),
-        ], 'lang');
     }
 
     protected function registerMiddleware(Router $router): void
@@ -121,7 +110,7 @@ class RapServiceProvider extends ServiceProvider
         // 注册中间件组
         $router->middlewareGroup('rap-api', [
             'check.auth',
-            'permission',
+            // 'permission',
             // 'throttle:api',
             'request.response.logger',
         ]);

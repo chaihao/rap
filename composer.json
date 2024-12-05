@@ -12,7 +12,8 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Chaihao\\Rap\\RapServiceProvider"
+                "Chaihao\\Rap\\RapServiceProvider",
+                "Chaihao\\Rap\\Providers\\AppServiceProvider"
             ]
         },
         "files": [

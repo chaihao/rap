@@ -8,10 +8,11 @@ use Chaihao\Rap\Models\Sys\Permissions;
 use Chaihao\Rap\Models\Sys\Roles;
 use Chaihao\Rap\Services\BaseService;
 use Exception;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
-use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\{Permission, Role};
 
 class PermissionService extends BaseService
 {
@@ -60,7 +61,7 @@ class PermissionService extends BaseService
     * @param array $permissions 权限数组
     * @return Staff
     */
-   public function syncPermissions(int $userId, array $permissions)
+   public function syncPermissions(int $userId, array $permissions): Staff
    {
       $user = $this->model::find($userId);
       if (!$user) {
@@ -107,15 +108,15 @@ class PermissionService extends BaseService
    /**
     * 获取用户的所有角色
     * @param int $userId
-    * @return array
+    * @return Collection
     */
-   public function getUserRoles(int $userId): array
+   public function getUserRoles(int $userId): Collection
    {
       $user = $this->model::find($userId);
       if (!$user) {
          throw new ApiException('用户不存在');
       }
-      return $user->roles->select('id', 'name', 'slug', 'guard_name')->toArray();
+      return $user->roles->select('id', 'name', 'slug', 'guard_name');
    }
 
    /**
@@ -159,11 +160,21 @@ class PermissionService extends BaseService
     */
    public function createRole(array $data): Role
    {
-      return Roles::create([
-         'name' => $data['name'],
-         'slug' => $data['slug'],
-         'guard_name' => $data['guard_name'] ?? 'api'
-      ]);
+      try {
+         // 检查角色名称是否已存在
+         if (Role::where('name', $data['name'])->exists()) {
+            throw new ApiException('角色名称已存在');
+         }
+
+         // 使用 Spatie\Permission\Models\Role 创建角色
+         return Role::create([
+            'name' => $data['name'],
+            'guard_name' => config('rap.api.guard', 'api'),
+            'slug' => $data['slug'] ?? null
+         ]);
+      } catch (Exception $e) {
+         throw new ApiException($e->getMessage());
+      }
    }
 
    /**
@@ -217,7 +228,7 @@ class PermissionService extends BaseService
                ->select('id', 'name', 'guard_name', 'uri')
                ->get()
                ->keyBy(function ($item) {
-                  return $item->name . '_' . ($item->guard_name ?? 'api');
+                  return $item->name . '_' . ($item->guard_name ?? config('rap.api.guard', 'api'));
                });
 
             // 软删除现有权限
@@ -251,7 +262,7 @@ class PermissionService extends BaseService
          if (!$routeInfo['is_login']) {
             continue;
          }
-         $routeInfo['guard_name'] = $routeInfo['guard_name'] ?? 'api';
+         $routeInfo['guard_name'] = $routeInfo['guard_name'] ?? config('rap.api.guard', 'api');
          $key = $routeInfo['name'] . '_' . $routeInfo['guard_name'];
 
          if (isset($existingPermissions[$key])) {
@@ -363,7 +374,7 @@ class PermissionService extends BaseService
     * @param string $path 原始路径
     * @return string 转换后的路径
     */
-   function convertPath($path)
+   public function convertPath($path)
    {
       // 去掉大括号
       $path = str_replace(['{', '}'], '', $path);

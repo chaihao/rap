@@ -11,6 +11,7 @@ namespace Chaihao\Rap\Providers;
 use Chaihao\Rap\Exception\ApiException;
 use DateTime;
 use Illuminate\Contracts\Debug\ExceptionHandler;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -29,6 +30,18 @@ class AppServiceProvider extends ServiceProvider
             __DIR__ . '/../../config/logging.php',
             'rap.logging'
         );
+
+
+        // 注册语言文件路径
+        $this->loadTranslationsFrom(
+            __DIR__ . '/../resources/lang',
+            'rap'
+        );
+
+        // 发布语言文件
+        $this->publishes([
+            __DIR__ . '/../resources/lang' => resource_path('lang'),
+        ], 'rap-lang');
     }
 
     /**
@@ -36,6 +49,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // 设置默认语言
+        $locale = Config::get('app.locale', 'zh_CN');
+        App::setLocale($locale);
+
         $this->setupSqlLogging();
     }
 

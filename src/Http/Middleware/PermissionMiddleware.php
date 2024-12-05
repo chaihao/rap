@@ -16,7 +16,7 @@ class PermissionMiddleware
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next, ...$roles): Response
     {
         try {
             // 获取当前用户
@@ -33,13 +33,23 @@ class PermissionMiddleware
                 return $next($request);
             }
 
-            // 权限检查
+            // 获取当前请求路由权限
             $permission = $this->getCurrentUrl($path);
-            if (!$staff?->hasPermissionTo($permission)) {
-                throw UnauthorizedException::forPermissions([$permission]);
+
+            // 优化权限检查逻辑
+            if (!empty($roles)) {
+                // 检查是否具有任一指定角色
+                if ($staff?->hasRole($roles)) {
+                    return $next($request);
+                }
             }
 
-            return $next($request);
+            // 检查是否具有当前路由所需权限
+            if ($staff?->hasPermissionTo($permission)) {
+                return $next($request);
+            }
+
+            throw UnauthorizedException::forPermissions([$permission]);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,

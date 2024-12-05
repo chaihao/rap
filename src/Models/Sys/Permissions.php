@@ -11,7 +11,7 @@ class Permissions extends Permission
     use SoftDeletes;
     protected $table = 'permissions';
 
-    protected $fillable = ["id", "name", "method", "uri", "controller", "action", "slug", "prefix", "guard_name", "middleware", "group", "group_name", "is_login", "status"];
+    protected $fillable = ["id", "name", "method", "uri", "controller", "action", "slug", "prefix", "guard_name", "middleware", "group", "group_name", "is_login", "status", "deleted_at"];
 
     protected $casts = ["middleware" => "array"];
 
