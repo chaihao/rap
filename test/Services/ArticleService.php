@@ -5,6 +5,7 @@ namespace Chaihao\Rap\Test\Services;
 use Chaihao\Rap\Services\BaseService;
 use Chaihao\Rap\Test\Models\Article;
 use Chaihao\Rap\Exception\ApiException;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -77,8 +78,13 @@ class ArticleService extends BaseService
 
     /**
      * 重写添加方法,展示了文件上传处理
+     * 
+     * @param array $data 创建数据
+     * @param bool $validate 是否验证数据
+     * @return Model
+     * @throws ApiException
      */
-    public function add(array $data, bool $validate = true): array
+    public function add(array $data, bool $validate = true): Model
     {
         // 处理封面图上传
         if (isset($data['cover_image']) && is_uploaded_file($data['cover_image'])) {
@@ -90,17 +96,29 @@ class ArticleService extends BaseService
 
     /**
      * 重写编辑方法,展示了文件更新处理
+     * 
+     * @param int $id 记录ID
+     * @param array $data 更新数据
+     * @return Model
+     * @throws ApiException
      */
-    public function edit(int $id, array $data)
+    public function edit(int $id, array $data): Model
     {
         // 处理封面图上传
         if (isset($data['cover_image']) && is_uploaded_file($data['cover_image'])) {
+            // 检查文件是否有效
+            if (!$data['cover_image']->isValid()) {
+                throw new ApiException('上传文件无效');
+            }
+
             $data['cover_image'] = $this->uploadCoverImage($data['cover_image']);
 
             // 删除旧图片
             $oldArticle = $this->findRecord($id);
             if ($oldArticle && $oldArticle->cover_image) {
-                $this->deleteCoverImage($oldArticle->cover_image);
+                // 从storage路径中提取实际的文件路径
+                $oldPath = str_replace('storage/', '', $oldArticle->cover_image);
+                $this->deleteCoverImage($oldPath);
             }
         }
 

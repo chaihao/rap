@@ -42,6 +42,9 @@ abstract class BaseService
 
     /**
      * 获取列表数据
+     * 
+     * @param array $params 查询参数
+     * @return array
      */
     public function getList(array $params = []): array
     {
@@ -58,8 +61,11 @@ abstract class BaseService
 
     /**
      * 获取列表数据
+     * 
+     * @param array $params 查询参数
+     * @return array
      */
-    protected function fetchListData(array $params)
+    protected function fetchListData(array $params): array
     {
         // 应用自定义查询条件
         $params = $this->customListQuery($params);
@@ -206,8 +212,13 @@ abstract class BaseService
 
     /**
      * 创建记录
+     * 
+     * @param array $data 创建数据
+     * @param bool $validate 是否验证数据
+     * @return Model
+     * @throws ApiException
      */
-    public function add(array $data, bool $validate = true): array
+    public function add(array $data, bool $validate = true): Model
     {
         try {
             DB::beginTransaction();
@@ -251,8 +262,13 @@ abstract class BaseService
     }
     /**
      * 更新记录
+     * 
+     * @param int $id 记录ID
+     * @param array $data 更新数据
+     * @throws ApiException
+     * @return Model
      */
-    public function edit(int $id, array $data)
+    public function edit(int $id, array $data): Model
     {
         try {
             DB::beginTransaction();
