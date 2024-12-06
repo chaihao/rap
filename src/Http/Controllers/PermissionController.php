@@ -131,7 +131,7 @@ class PermissionController extends BaseController
      */
     public function getAllRoles()
     {
-        $roles = Role::with('permissions')->get();
+        $roles = Role::all();
         return $this->success($roles);
     }
 

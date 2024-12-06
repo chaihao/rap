@@ -43,7 +43,7 @@ class PermissionService extends BaseService
     * 撤销用户的指定权限
     * @param int $userId 用户ID
     * @param string|array $permissions 权限名称或权限数组
-    * @return Staff  
+    * @return Staff
     */
    public function revokePermissionTo(int $userId, string|array $permissions)
    {
@@ -74,7 +74,7 @@ class PermissionService extends BaseService
 
    /**
     * 同步角色权限
-    * @param int $roleId   
+    * @param int $roleId
     * @param array $permissions
     * @return Role 返回角色模型
     */
@@ -88,36 +88,62 @@ class PermissionService extends BaseService
    }
 
 
-   /**
+  /**
     * 获取用户的所有权限
     * @param int $userId 用户ID
+    * @param string $fieldColumn 需要获取的字段名
     * @return array
     */
-   public function getUserPermissions(int $userId, string $fieldColumn = 'name'): array
-   {
-      $user = $this->model::find($userId);
-      if (!$user) {
-         throw new ApiException('用户不存在');
-      }
-      if ($fieldColumn && in_array($fieldColumn, ['id', 'name',  'slug'])) {
-         return $user->getAllPermissions()->pluck($fieldColumn)->toArray();
-      }
-      return $user->getAllPermissions()->select('id', 'name', 'method', 'uri', 'slug', 'group', 'group_name')->toArray();
-   }
+    public function getUserPermissions(int $userId, string $fieldColumn = ''): array
+    {
+       $user = $this->model::find($userId);
+       if (!$user) {
+          throw new ApiException('用户不存在');
+       }
 
-   /**
-    * 获取用户的所有角色
-    * @param int $userId
-    * @return Collection
-    */
-   public function getUserRoles(int $userId): Collection
-   {
-      $user = $this->model::find($userId);
-      if (!$user) {
-         throw new ApiException('用户不存在');
-      }
-      return $user->roles->select('id', 'name', 'slug', 'guard_name');
-   }
+       $permissions = $user->getAllPermissions();
+
+       if ($fieldColumn && in_array($fieldColumn, ['id', 'name', 'slug'])) {
+          return $permissions->pluck($fieldColumn)->toArray();
+       }
+
+       return $permissions->map(function ($permission) {
+          return [
+             'id' => $permission->id,
+             'name' => $permission->name,
+             'method' => $permission->method,
+             'uri' => $permission->uri,
+             'slug' => $permission->slug,
+             'group' => $permission->group,
+             'group_name' => $permission->group_name
+          ];
+       })->toArray();
+    }
+
+    /**
+     * 获取用户的所有角色
+     * @param int $userId
+     * @return array
+     */
+    public function getUserRoles(int $userId, string $fieldColumn = ''): array
+    {
+       $user = $this->model::find($userId);
+       if (!$user) {
+          throw new ApiException('用户不存在');
+       }
+       $roles = $user->roles;
+       if ($fieldColumn && in_array($fieldColumn, ['id', 'name', 'slug'])) {
+          return $roles->pluck($fieldColumn)->toArray();
+       }
+       return $roles->map(function ($role) {
+          return [
+             'id' => $role->id,
+             'name' => $role->name,
+             'slug' => $role->slug,
+             'guard_name' => $role->guard_name
+          ];
+       })->toArray();
+    }
 
    /**
     * 分配角色

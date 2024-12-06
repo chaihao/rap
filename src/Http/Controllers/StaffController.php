@@ -7,6 +7,7 @@ use Chaihao\Rap\Http\Controllers\BaseController;
 use Chaihao\Rap\Models\Auth\Staff;
 use Chaihao\Rap\Services\Auth\StaffService;
 use Carbon\Carbon;
+use Chaihao\Rap\Services\Sys\PermissionService;
 use Illuminate\Http\JsonResponse;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -79,6 +80,9 @@ class StaffController extends BaseController
     public function staffInfo(): JsonResponse
     {
         $staff = auth()->guard()->user();
+        $staff->permissions = app(PermissionService::class)->getUserPermissions($staff->id, 'name');
+        $staff->roles = app(PermissionService::class)->getUserRoles($staff->id, 'name');
+
         if ($staff) {
             return $this->success($staff);
         }
