@@ -26,7 +26,7 @@ class DummyClass extends BaseService
     /**
      * 初始化服务
      */
-    public function __construct(DummyModel $model)
+    public function __construct(Dummy $model)
     {
         $this->setModel($model);
     }
@@ -36,7 +36,7 @@ class DummyClass extends BaseService
      * @param array $params
      * @return array
      */
-    protected function customListQuery(array $params): array
+    public function customListQuery(array $params): array
     {
         return $params;
     }
@@ -46,7 +46,7 @@ class DummyClass extends BaseService
      * @param array $params
      * @return array
      */
-    protected function beforeAdd(array $params): array
+    public function beforeAdd(array $params): array
     {
         return $params;
     }
@@ -56,7 +56,7 @@ class DummyClass extends BaseService
      * @param array $params
      * @return array
      */
-    protected function beforeEdit(array $params): array
+    public function beforeEdit(array $params): array
     {
         return $params;
     }
