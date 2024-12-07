@@ -7,8 +7,8 @@ use Illuminate\Console\GeneratorCommand;
 class MakeController extends GeneratorCommand
 {
     /**
-     * The name and signature of the console command.
-     *
+     * 命令名称和签名
+     * 用于在命令行中调用此命令
      * @var string
      */
     protected $name = 'make:controller';
@@ -30,6 +30,10 @@ class MakeController extends GeneratorCommand
 
     protected $signature = 'make:controller {name}';
 
+    /**
+     * 获取控制器模板文件的路径
+     * @return string
+     */
     protected function getStub()
     {
         return __DIR__ . '/Stubs/controller.stub';
@@ -59,7 +63,8 @@ class MakeController extends GeneratorCommand
     }
 
     /**
-     * 替换模型名称
+     * replaceModelName 方法
+     * 负责替换模板中的所有占位符
      * @param string $stub
      * @return string
      */
@@ -68,11 +73,11 @@ class MakeController extends GeneratorCommand
         $name = $this->getNameInput();
         $controllerName = $this->getControllerName($name);
 
-        // 使用数组存储替换规则，提高代码可维护性
+        // 定义替换规则映射
         $replacements = [
-            'TABLE_NAME' => $this->convertToSnakeCase($controllerName),
-            'DummyModel' => $controllerName,
-            'DummyService' => $controllerName . 'Service'
+            'TABLE_NAME' => $this->convertToSnakeCase($controllerName),    // 表名（蛇形命名）
+            'DummyModel' => $controllerName,                               // 模型名
+            'DummyService' => $controllerName . 'Service'                  // 服务名
         ];
 
         // 处理模型和服务的命名空间
@@ -154,8 +159,9 @@ class MakeController extends GeneratorCommand
     }
 
     /**
-     * 执行控制台命令。
-     *
+     * handle 方法
+     * 控制器生成的主要逻辑处理
+     * 包括验证、创建和错误处理
      * @return int
      */
     public function handle()
@@ -163,88 +169,111 @@ class MakeController extends GeneratorCommand
         $name = $this->qualifyClass($this->getNameInput());
         $path = $this->getPath($name);
 
-        // 检查文件是否已存在
-        if ($this->alreadyExists($this->getNameInput())) {
-            $this->components->warn(sprintf('%s 已经存在', $this->type));
-            if (!$this->components->confirm('是否要覆盖现有控制器？')) {
-                return 1;
+        try {
+            // 检查控制器是否已存在
+            if ($this->alreadyExists($this->getNameInput())) {
+                if (!$this->handleExistingController()) {
+                    return 1;
+                }
             }
+
+            $this->createController($path, $name);
+            $this->showSuccessMessage($path);
+
+            return 0;
+        } catch (\Exception $e) {
+            $this->components->error("创建控制器失败：" . $e->getMessage());
+            return 1;
         }
-
-        // 生成文件
-        $this->makeDirectory($path);
-        $this->files->put($path, $this->sortImports($this->buildClass($name)));
-
-        // 输出成功信息和文件路径
-        $this->components->info(sprintf('%s 已经成功创建。', $this->type));
-        $this->components->info(sprintf('文件路径: %s', $path));
-
-        return 0;
     }
 
     /**
-     * 删除现有文件
-     * @param string $path
+     * 处理已存在的控制器
+     * @return bool
      */
-    protected function deleteExistingFile($path)
+    private function handleExistingController(): bool
     {
-        if (file_exists($path)) {
-            unlink($path);
-        }
+        $this->components->warn(sprintf('%s 已经存在', $this->type));
+        return $this->components->confirm('是否要覆盖现有控制器？');
     }
 
     /**
-     * 创建新控制器
+     * 创建控制器
      * @param string $path
      * @param string $name
      */
-    protected function createNewController($path, $name)
+    private function createController(string $path, string $name): void
     {
         $this->makeDirectory($path);
-        $this->files->put($path, $this->buildClass($name));
+        $this->files->put($path, $this->sortImports($this->buildClass($name)));
     }
 
+    /**
+     * 显示成功消息
+     * @param string $path
+     */
+    private function showSuccessMessage(string $path): void
+    {
+        $this->components->info(sprintf('%s 已经成功创建。', $this->type));
+        $this->components->info(sprintf('文件路径: %s', $path));
+    }
 
     /**
-     * 检测类名并返回完整命名空间
-     * @param string $className 类名
-     * @param array $namespaces 要搜索的命名空间列表
-     * @return string|null 返回完整的类名（包含命名空间）或 null
+     * findClassNamespace 方法
+     * 根据类名查找对应的命名空间
+     * 支持 Model 和 Service 的自动查找
+     * @param string $className
+     * @param array $namespaces
+     * @return string|null
      */
     private function findClassNamespace($className, array $namespaces = []): ?string
     {
-        // 标准化类名，统一使用反斜杠
         $className = $this->normalizeClassName($className);
 
-        // 处理版本号
-        $version = config('rap.namespace.controller.version');
-        if ($version) {
-            // 确保版本号格式统一（添加斜线）
-            $normalizedVersion = trim($version, '\\/') . '\\';
-            if (strpos($className, $normalizedVersion) !== false) {
-                $className = str_replace($normalizedVersion, '', $className);
+        // 从配置中获取基础命名空间
+        $baseNamespaces = config('rap.namespaces', [
+            'App\\Models\\',
+            'App\\Services\\',
+            'App\\Http\\Controllers\\',
+        ]);
+
+        $searchNamespaces = array_merge($baseNamespaces, $namespaces);
+
+        // 只有在查找 Model 和 Service 时才移除版本号
+        if (str_contains($className, 'Service') || !str_contains($className, 'Controller')) {
+            $version = config('rap.namespace.controller.version');
+            if ($version) {
+                $className = $this->removeVersionFromClassName($className, $version);
             }
         }
 
-        // 如果提供的是完整类名且类存在，直接返回
         if (class_exists($className)) {
             return $className;
         }
 
-        // 合并并搜索命名空间
-        $searchNamespaces = array_merge([
-            'App\\Models\\',
-            'App\\Services\\',
-            'App\\Http\\Controllers\\',
-        ], $namespaces);
+        return $this->searchInNamespaces($className, $searchNamespaces);
+    }
 
-        foreach ($searchNamespaces as $namespace) {
+    /**
+     * 从类名中移除版本号
+     */
+    private function removeVersionFromClassName(string $className, string $version): string
+    {
+        $normalizedVersion = trim($version, '\\/') . '\\';
+        return str_replace($normalizedVersion, '', $className);
+    }
+
+    /**
+     * 在命名空间中搜索类
+     */
+    private function searchInNamespaces(string $className, array $namespaces): ?string
+    {
+        foreach ($namespaces as $namespace) {
             $fullClassName = $namespace . $className;
             if ($this->isValidClass($fullClassName, $className)) {
                 return $fullClassName;
             }
         }
-
         return null;
     }
 

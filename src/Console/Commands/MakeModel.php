@@ -66,11 +66,13 @@ class MakeModel extends GeneratorCommand
         // 获取所有字段，包括时间戳字段
         $allFields = $tableName ? $this->getAllFields($tableName) : [];
 
+        // 移除表前缀
         $stub = str_replace('TABLE', $tableName ? str_replace(env('DB_PREFIX', ''), '', $tableName) : '', $stub);
 
+        // 替换验证规则、场景等信息
         $stub = $this->replaceRules($stub, $list, $tableName);
 
-        // 检查是否存在 deleted_at 字段（使用包含所有字段的列表）
+        // 检查是否需要软删除功能
         $hasSoftDeletes = in_array('deleted_at', $allFields);
 
         if ($hasSoftDeletes) {
@@ -101,20 +103,30 @@ class MakeModel extends GeneratorCommand
     }
 
     /**
-     * 组织表数据
-     * 
-     * 此方法返回过滤后的字段列表，不包含时间戳字段
-     * 用于生成模型的其他部分，如规则、填充等
+     * 组织表数据 - 优化异常处理和代码结构
      */
     public function organizeData($tableName)
     {
         try {
-            $info = collect(DB::select(sprintf("DESC %s;", $tableName)))->toArray();
-            return array_filter($info, function ($item) {
-                return !in_array($item->Field, self::TIMESTAMP_FIELDS);
-            });
+            return DB::table('information_schema.columns')
+                ->where('table_schema', env('DB_DATABASE'))
+                ->where('table_name', $tableName)
+                ->get()
+                ->reject(function ($column) {
+                    return in_array($column->COLUMN_NAME, self::TIMESTAMP_FIELDS);
+                })
+                ->map(function ($column) {
+                    return (object)[
+                        'Field' => $column->COLUMN_NAME,
+                        'Type' => $column->COLUMN_TYPE,
+                        'Null' => $column->IS_NULLABLE,
+                        'Key' => $column->COLUMN_KEY === 'UNI' ? 'UNI' : '',
+                    ];
+                })
+                ->all();
         } catch (\Throwable $th) {
-            return false;
+            $this->error("无法获取表 {$tableName} 的结构信息：" . $th->getMessage());
+            return [];
         }
     }
 
@@ -188,43 +200,59 @@ class MakeModel extends GeneratorCommand
     protected function replaceRules($stub, $list, $tableName)
     {
         try {
-            $rules = '';
-            $fillable = '';
-            $casts = '';
-            $scenarios = '';
-            $scenarioFields = [];
+            $rules = [];
+            $fillable = [];
+            $casts = [];
+            $scenarioFields = [
+                'add' => [],
+                'edit' => []
+            ];
 
-            foreach ($list as $key => $item) {
-                $fieldRules = $this->getFieldRules($item, $tableName);
-                if ($fieldRules && $item->Field != 'id') {
-                    $rules .= sprintf('"%s" => "%s",%s', $item->Field, $fieldRules, PHP_EOL);
-                }
-                $fillable .= sprintf('"%s",', $item->Field);
-                if ($item->Type == 'json') {
-                    $casts .= sprintf('"%s" => "%s",%s', $item->Field, 'array', PHP_EOL);
+            foreach ($list as $item) {
+                if ($item->Field === 'id') {
+                    continue;
                 }
 
-                // 添加字段到场景
-                if ($item->Field != 'id') {
-                    $scenarioFields['add'][] = $item->Field;
-                    $scenarioFields['edit'][] = $item->Field;
+                // 获取字段规则和类型转换
+                [$fieldRules, $cast] = $this->getFieldRules($item, $tableName);
+
+                // 添加验证规则
+                if ($fieldRules) {
+                    $rules[$item->Field] = $fieldRules;
                 }
+
+                // 添加可填充字段
+                $fillable[] = $item->Field;
+
+                // 添加类型转换
+                if ($cast) {
+                    $casts[$item->Field] = $cast;
+                }
+
+                // 添加到场景
+                $scenarioFields['add'][] = $item->Field;
+                $scenarioFields['edit'][] = $item->Field;
             }
 
             // 生成场景配置
-            $scenarios .= "'add' => ['" . implode("', '", $scenarioFields['add']) . "']," . PHP_EOL;
-            $scenarios .= "'edit' => ['id', '" . implode("', '", $scenarioFields['edit']) . "']," . PHP_EOL;
-            $scenarios .= "'delete' => ['id']," . PHP_EOL;
-            $scenarios .= "'detail' => ['id']," . PHP_EOL;
-            // 字段中存在status字段，则生成status场景   
-            if (in_array('status', $scenarioFields['add']) || in_array('status', $scenarioFields['edit'])) {
-                $scenarios .= "'status' => ['id', 'status']," . PHP_EOL;
+            $scenarios = [
+                'add' => $scenarioFields['add'],
+                'edit' => array_merge(['id'], $scenarioFields['edit']),
+                'delete' => ['id'],
+                'detail' => ['id']
+            ];
+
+            // 添加状态场景
+            if (in_array('status', $fillable)) {
+                $scenarios['status'] = ['id', 'status'];
             }
 
-            $stub = str_replace('FILLABLE', rtrim($fillable, ','), $stub);
-            $stub = str_replace('CASTS', rtrim($casts, PHP_EOL), $stub);
-            $stub = str_replace('RULES', rtrim($rules, PHP_EOL), $stub);
-            $stub = str_replace('SCENARIOS', rtrim($scenarios, PHP_EOL), $stub);
+            // 替换模板中的占位符
+            $stub = str_replace('FILLABLE', '"' . implode('","', $fillable) . '"', $stub);
+            $stub = str_replace('CASTS', $this->arrayToString($casts), $stub);
+            $stub = str_replace('RULES', $this->arrayToString($rules), $stub);
+            $stub = str_replace('SCENARIOS', $this->scenariosToString($scenarios), $stub);
+
             return $stub;
         } catch (\Exception $e) {
             return str_replace(['RULES', 'SCENARIOS'], '', $stub);
@@ -232,60 +260,118 @@ class MakeModel extends GeneratorCommand
     }
 
     /**
-     * 获取字段规则
+     * 将数组转换为字符串格式
+     */
+    private function arrayToString(array $array): string
+    {
+        $result = [];
+        foreach ($array as $key => $value) {
+            $result[] = "\"$key\" => \"$value\"";
+        }
+        return implode(',' . PHP_EOL, $result);
+    }
+
+    /**
+     * 将场景数组转换为字符串格式
+     */
+    private function scenariosToString(array $scenarios): string
+    {
+        $result = [];
+        foreach ($scenarios as $key => $fields) {
+            $result[] = "'{$key}' => ['" . implode("', '", $fields) . "']";
+        }
+        return implode(',' . PHP_EOL, $result);
+    }
+
+    /**
+     * 获取字段规则 - 优化规则生成逻辑
      */
     protected function getFieldRules($item, $tableName)
     {
         $rules = [];
-        $type = strtolower($item->Type);
-
-        // 必填字段
-        $item->Null === 'NO' && $rules[] = 'required';
-
-        // 解析字段类型和长度
-        preg_match('/(\w+)(\((\d+)(?:,(\d+))?\))?/', $type, $matches);
-        $baseType = $matches[1] ?? '';
-        $length = $matches[3] ?? null;
-
-        // 根据字段类型添加验证规则
-        switch ($baseType) {
-            case 'int':
-            case 'bigint':
-            case 'tinyint':
-                $rules[] = 'integer';
-                break;
-            case 'decimal':
-            case 'float':
-            case 'double':
-                $rules[] = 'numeric';
-                $length && $rules[] = "regex:/^\d{1,$length}(\.\d{1," . ($matches[4] ?? 2) . "})?$/";
-                break;
-            case 'char':
-            case 'varchar':
-                $length && $rules[] = "max:$length";
-                break;
-            case 'enum':
-                preg_match_all("/'([^']+)'/", $type, $enumMatches);
-                $rules[] = 'in:' . implode(',', $enumMatches[1]);
-                break;
-            case 'text':
-            case 'mediumtext':
-            case 'longtext':
-                $rules[] = 'string';
-                break;
-
-            case 'timestamp':
-            case 'datetime':
-                $rules[] = 'date';
-                break;
+        $casts = '';
+        
+        // 解析字段类型信息（类型、长度、小数位）
+        $typeInfo = $this->parseFieldType($item->Type);
+        $baseType = $typeInfo['type'];
+        $length = $typeInfo['length'];
+        $decimals = $typeInfo['decimals'];
+        
+        // 添加必填规则
+        if ($item->Null === 'NO') {
+            $rules[] = 'required';
         }
-
-        // 唯一字段验证
+        
+        // 根据字段类型设置对应的验证规则和类型转换
+        $typeRules = $this->getTypeBasedRules($baseType, $length, $decimals);
+        $rules = array_merge($rules, $typeRules['rules']);
+        $casts = $typeRules['cast'];
+        
+        // 添加唯一字段验证规则
         if ($item->Key === 'UNI') {
-            $rules[] = 'unique:' . ltrim($tableName, env('DB_PREFIX', '')) . ',' . $item->Field;
+            $tableName = ltrim($tableName, env('DB_PREFIX', ''));
+            $rules[] = "unique:{$tableName},{$item->Field}";
         }
+        
+        return [implode('|', array_filter($rules)), $casts];
+    }
 
-        return implode('|', $rules);
+    /**
+     * 解析字段类型
+     */
+    private function parseFieldType($type)
+    {
+        $matches = [];
+        preg_match('/(\w+)(?:\((\d+)(?:,(\d+))?\))?/', strtolower($type), $matches);
+        
+        return [
+            'type' => $matches[1] ?? '',
+            'length' => $matches[2] ?? null,
+            'decimals' => $matches[3] ?? null
+        ];
+    }
+
+    /**
+     * 获取基于类型的规则
+     */
+    private function getTypeBasedRules($baseType, $length = null, $decimals = null)
+    {
+        $rules = [];
+        $cast = '';
+        
+        // 定义数据类型映射关系
+        $typeMap = [
+            'integer' => ['int', 'bigint', 'tinyint'],        // 整数类型
+            'numeric' => ['decimal', 'float', 'double'],      // 数值类型
+            'string' => ['char', 'varchar', 'text', 'mediumtext', 'longtext'],  // 字符串类型
+            'datetime' => ['timestamp', 'datetime'],          // 日期时间类型
+            'array' => ['json']                              // JSON类型
+        ];
+        
+        // 根据字段类型设置相应的验证规则
+        foreach ($typeMap as $castType => $types) {
+            if (in_array($baseType, $types)) {
+                $cast = $castType;
+                $rules[] = $castType === 'numeric' ? 'numeric' : $castType;
+                
+                // 字符串类型添加长度限制
+                if ($length && in_array($baseType, ['char', 'varchar'])) {
+                    $rules[] = "max:{$length}";
+                }
+                
+                // 数值类型添加格式验证
+                if ($castType === 'numeric' && $length && $decimals) {
+                    $rules[] = "regex:/^\d{1,{$length}}(\.\d{1,{$decimals}})?$/";
+                }
+                
+                break;
+            }
+        }
+        
+        return [
+            'rules' => $rules,
+            'cast' => $cast
+        ];
     }
 
     /**
