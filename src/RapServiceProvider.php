@@ -78,7 +78,7 @@ class RapServiceProvider extends ServiceProvider
             __DIR__ . '/../config/rap.php' => config_path('rap.php'), // 发布rap配置
             __DIR__ . '/../config/permission.php' => config_path('permission.php'), // 发布权限配置
             __DIR__ . '/../config/jwt.php' => config_path('jwt.php'), // 发布jwt配置
-            __DIR__ . '/../resources/lang' => resource_path('lang'), // 发布语言文件
+            __DIR__ . '/resources/lang' => resource_path('lang'), // 发布语言文件
         ], 'rap-config');
 
         // 可选: 如果需要分别发布，可以保留单独的标签

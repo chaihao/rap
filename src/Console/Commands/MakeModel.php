@@ -239,12 +239,15 @@ class MakeModel extends GeneratorCommand
         $rules = [];
         $type = strtolower($item->Type);
 
+        // 必填字段
         $item->Null === 'NO' && $rules[] = 'required';
-        preg_match('/(\w+)(\((\d+)(?:,(\d+))?\))?/', $type, $matches);
 
+        // 解析字段类型和长度
+        preg_match('/(\w+)(\((\d+)(?:,(\d+))?\))?/', $type, $matches);
         $baseType = $matches[1] ?? '';
         $length = $matches[3] ?? null;
 
+        // 根据字段类型添加验证规则
         switch ($baseType) {
             case 'int':
             case 'bigint':
@@ -265,9 +268,22 @@ class MakeModel extends GeneratorCommand
                 preg_match_all("/'([^']+)'/", $type, $enumMatches);
                 $rules[] = 'in:' . implode(',', $enumMatches[1]);
                 break;
+            case 'text':
+            case 'mediumtext':
+            case 'longtext':
+                $rules[] = 'string';
+                break;
+
+            case 'timestamp':
+            case 'datetime':
+                $rules[] = 'date';
+                break;
         }
 
-        $item->Key === 'UNI' && $rules[] = 'unique:' . ltrim($tableName, env('DB_PREFIX', '')) . ',' . $item->Field;
+        // 唯一字段验证
+        if ($item->Key === 'UNI') {
+            $rules[] = 'unique:' . ltrim($tableName, env('DB_PREFIX', '')) . ',' . $item->Field;
+        }
 
         return implode('|', $rules);
     }
