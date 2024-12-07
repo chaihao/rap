@@ -47,7 +47,7 @@ return new class extends Migration {
             $table->enum('sex', ['0', '1', '2'])->nullable()->default('0')->comment('性别 0 未知 1 男 2 女');
             $table->tinyInteger('is_super')->nullable()->default(0)->comment('是否超级管理员');
             $table->string('remark', 255)->nullable()->default('')->comment('备注');
-            $table->tinyInteger('status')->nullable()->default(1)->comment('状态');
+            $table->tinyInteger('status')->nullable()->default(1)->comment('状态 1 启用 0 禁用');
             $table->timestamps();
             $table->softDeletes();
             $table->index('phone', 'idx_phone');

@@ -33,10 +33,15 @@ class CheckAuth
             }
 
             $staff = auth($guard)->user();
-
+            // 用户未登录或会话已过期
             if (!$staff) {
                 return $this->unauthorizedResponse('用户未登录或会话已过期');
             }
+            // 用户状态
+            if (!$staff->status) {
+                return $this->unauthorizedResponse('用户已禁用');
+            }
+
             $staffClass = config('rap.models.staff.class');
             if (!($staff instanceof $staffClass)) {
                 return $this->unauthorizedResponse('无效的用户类型');

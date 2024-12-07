@@ -60,9 +60,10 @@ class ApiException extends Exception
             'file' => $this->getFile(),
             'line' => $this->getLine(),
             'trace' => collect($this->getTrace())
-                ->map(fn($trace) => collect($trace)
-                    ->only(['file', 'line', 'function', 'class'])
-                    ->toArray()
+                ->map(
+                    fn($trace) => collect($trace)
+                        ->only(['file', 'line', 'function', 'class'])
+                        ->toArray()
                 )
                 ->toArray()
         ];
@@ -105,6 +106,13 @@ class ApiException extends Exception
         return new static($message, self::BAD_REQUEST);
     }
 
+    /**
+     * 创建无效凭证异常
+     */
+    public static function invalidCredentials(string $message = '用户名或密码错误'): static
+    {
+        return new static($message, self::UNAUTHORIZED);
+    }
 
     /**
      * 从其他异常创建 ApiException
@@ -113,10 +121,10 @@ class ApiException extends Exception
      */
     public static function from(Throwable $e): static
     {
-        $statusCode = $e instanceof HttpExceptionInterface 
-            ? $e->getStatusCode() 
+        $statusCode = $e instanceof HttpExceptionInterface
+            ? $e->getStatusCode()
             : self::SERVER_ERROR;
-            
+
         return new static(
             $e->getMessage() ?: '服务器错误',
             $statusCode,
