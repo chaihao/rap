@@ -24,14 +24,12 @@ class RequestResponseLogger
     {
         // 记录请求信息
         $requestLog = $this->getRequestLog($request);
-        Log::info('请求信息:', $requestLog);
 
         // 处理请求
         $response = $next($request);
 
         // 记录响应信息
         $responseLog = $this->getResponseLog($response);
-        Log::info('响应信息:', $responseLog);
 
         // 检查是否需要记录操作日志
         if ($this->shouldLogOperation($request)) {
@@ -98,13 +96,30 @@ class RequestResponseLogger
      */
     private function shouldLogOperation(Request $request): bool
     {
-        $actionName = $request->route()->getActionName() ?? '';
-        $actionName = explode('@', $actionName)[1] ?? '';
-        $actionTypes = config('rap.log_action_name');
+        // 1. 验证请求方法是否需要记录(POST/PUT/DELETE)
+        $method = $request->method();
+        if (!in_array($method, config('rap.log_action_name.methods', []))) {
+            return false;
+        }
 
-        return collect($actionTypes)->contains(function ($type) use ($actionName) {
-            return strpos($actionName, $type) !== false;
-        });
+        // 2. 获取控制器方法名称(例如: UserController@store)
+        $action = $request->route()?->getActionName() ?? '';
+        // 提取方法名部分(例如: store)
+        $actionName = explode('@', $action)[1] ?? '';
+        if (empty($actionName)) {
+            return false;
+        }
+
+        // 3. 获取需要记录的操作类型(create/update/delete等)
+        $actionTypes = config('rap.log_action_name.types', []);
+        if (empty($actionTypes)) {
+            return true;
+        }
+
+        // 4. 检查方法名是否包含配置的操作类型关键字
+        return collect($actionTypes)->contains(
+            fn($type) => \Illuminate\Support\Str::contains($actionName, $type)
+        );
     }
 
     /**
@@ -122,8 +137,6 @@ class RequestResponseLogger
         $this->addOperationLog($requestLog, $responseLog, $actionCustomName);
     }
 
-
-
     /**
      * 添加操作日志
      *
@@ -136,24 +149,26 @@ class RequestResponseLogger
         try {
             $payload = $requestLog['payload'] ?? [];
 
+            // 构建操作日志数据
             $operationLog = new OperationLog();
             $operationLog->fill([
                 'method' => $requestLog['method'] ?? '',
                 'url' => $requestLog['url'] ?? '',
                 'ip' => $requestLog['ip'] ?? '',
-                'userAgent' => $requestLog['user_agent'] ?? '',
-                'payload' => $payload, // 直接传入数组，让 Model 的 cast 处理转换
-                'response' => $responseLog['content'], // 直接传入数组，让 Model 的 cast 处理转换
-                'merchant_id' => (int)($payload['merchant_id'] ?? 0),
+                'user_agent' => $requestLog['user_agent'] ?? '',
+                // 使用 Model 的 cast 特性自动处理数组转换
+                'payload' => $payload,
+                'response' => $responseLog['content'],
                 'name' => $actionName,
-                'action_user_id' => (int)($payload['action_user_id'] ?? 0),
-                'action_user_type' => (int)($payload['action_user_type'] ?? 0),
+                'created_by' => (int)($payload['created_by'] ?? 0),
+                'created_by_platform' => (int)($payload['created_by_platform'] ?? 0),
             ]);
 
             if (!$operationLog->save()) {
                 throw new \Exception('操作日志保存失败');
             }
         } catch (\Exception $e) {
+            // 记录详细的错误信息
             Log::error('操作日志记录失败：' . $e->getMessage(), [
                 'request' => $requestLog,
                 'response' => $responseLog,
