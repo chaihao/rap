@@ -10,7 +10,7 @@ class DummyClass extends BaseModel
     USE_SOFT_DELETES
     
     /**
-     * 表名(不含前缀)
+     * 表名
      */
     protected $table = 'TABLE';
 

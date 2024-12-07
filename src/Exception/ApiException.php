@@ -10,13 +10,13 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class ApiException extends Exception
 {
-    // 定义常用错误码常量
-    public const BAD_REQUEST = Response::HTTP_BAD_REQUEST;
-    public const UNAUTHORIZED = Response::HTTP_UNAUTHORIZED;
-    public const FORBIDDEN = Response::HTTP_FORBIDDEN;
-    public const NOT_FOUND = Response::HTTP_NOT_FOUND;
-    public const VALIDATION_ERROR = Response::HTTP_UNPROCESSABLE_ENTITY;
-    public const SERVER_ERROR = Response::HTTP_INTERNAL_SERVER_ERROR;
+    // HTTP 状态码常量定义
+    public const BAD_REQUEST = Response::HTTP_BAD_REQUEST;           // 400
+    public const UNAUTHORIZED = Response::HTTP_UNAUTHORIZED;         // 401
+    public const FORBIDDEN = Response::HTTP_FORBIDDEN;              // 403
+    public const NOT_FOUND = Response::HTTP_NOT_FOUND;             // 404
+    public const VALIDATION_ERROR = Response::HTTP_UNPROCESSABLE_ENTITY; // 422
+    public const SERVER_ERROR = Response::HTTP_INTERNAL_SERVER_ERROR;    // 500
 
     protected int $statusCode;
     protected mixed $errors = null;
@@ -60,10 +60,9 @@ class ApiException extends Exception
             'file' => $this->getFile(),
             'line' => $this->getLine(),
             'trace' => collect($this->getTrace())
-                ->map(
-                    fn($trace) => collect($trace)
-                        ->only(['file', 'line', 'function', 'class'])
-                        ->toArray()
+                ->map(fn($trace) => collect($trace)
+                    ->only(['file', 'line', 'function', 'class'])
+                    ->toArray()
                 )
                 ->toArray()
         ];
@@ -109,14 +108,20 @@ class ApiException extends Exception
 
     /**
      * 从其他异常创建 ApiException
+     * @param Throwable $e 原始异常
+     * @return static
      */
     public static function from(Throwable $e): static
     {
+        $statusCode = $e instanceof HttpExceptionInterface 
+            ? $e->getStatusCode() 
+            : self::SERVER_ERROR;
+            
         return new static(
             $e->getMessage() ?: '服务器错误',
-            $e instanceof HttpExceptionInterface ? $e->getStatusCode() : self::SERVER_ERROR,
+            $statusCode,
             null,
-            $e instanceof HttpExceptionInterface ? $e->getStatusCode() : self::SERVER_ERROR
+            $statusCode
         );
     }
 }

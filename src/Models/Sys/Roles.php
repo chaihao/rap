@@ -7,22 +7,41 @@ use Spatie\Permission\Models\Role;
 class Roles extends Role
 {
 
+    /**
+     * 表名
+     */
     protected $table = 'roles';
 
-    protected $fillable = ["id", "name", "slug", "guard_name"];
+    /**
+     * 可批量赋值的属性
+     */
+    protected $fillable = ["guard_name", "name", "slug"];
 
-    protected $casts = [];
-
-    public $rules = [
-        "name" => "required|max:255",
-        "slug" => "max:255",
-        "guard_name" => "required|max:255",
+    /**
+     * 数据类型转换
+     */
+    protected $casts = [
+        "guard_name" => "string",
+        "name" => "string",
+        "slug" => "string"
     ];
 
+    /**
+     * 验证规则
+     */
+    public $rules = [
+        "guard_name" => "required|string|max:255",
+        "name" => "required|string|max:255",
+        "slug" => "string|max:255"
+    ];
+
+    /**
+     * 场景验证规则
+     */
     public $scenarios = [
-        'add' => ['name', 'slug', 'guard_name'],
-        'edit' => ['id', 'name', 'slug', 'guard_name'],
+        'add' => ['guard_name', 'name', 'slug'],
+        'edit' => ['id', 'guard_name', 'name', 'slug'],
         'delete' => ['id'],
-        'detail' => ['id'],
+        'detail' => ['id']
     ];
 }
