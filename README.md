@@ -62,6 +62,9 @@ CACHE_PREFIX=
 # API 配置
 RAP_API_PREFIX=api        # API 路由前缀
 RAP_API_GUARD=api        # API 认证守卫
+RAP_CONTROLLER_VERSION=V1\ # 控制器版本
+RAP_CREATE_SERVICES_MODEL=true # 创建service时，同时创建model
+RAP_CREATE_SERVICES_CONTROLLER=true # 创建service时，同时创建controller
 
 # 日志配置
 RAP_ENABLE_SQL_LOGGING=true   # 启用 SQL 日志
@@ -140,6 +143,15 @@ php artisan make:model User                # 模型
 php artisan make:services UserService      # 服务类
 php artisan make:repositories UserRepo     # 仓储类
 ```
+```php
+php artisan make:services User/UserService
+
+# 生成文件
+app/Http/Controllers/User/UserController.php
+app/Models/User/User.php
+app/Services/User/UserService.php
+```
+
 
 ## 进阶使用
 

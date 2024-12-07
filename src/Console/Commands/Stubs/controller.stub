@@ -4,8 +4,8 @@ namespace DummyNamespace;
 
 use Chaihao\Rap\Http\Controllers\BaseController;
 use Illuminate\Http\JsonResponse;
-use DummyModel;
-use DummyService;
+USED_DUMMY_MODEL
+USED_DUMMY_SERVICE
 
 class DummyClass extends BaseController
 {

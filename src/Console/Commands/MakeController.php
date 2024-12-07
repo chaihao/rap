@@ -66,14 +66,46 @@ class MakeController extends GeneratorCommand
     protected function replaceModelName($stub)
     {
         $name = $this->getNameInput();
-        $modelName = $this->getModelName($name);
+        $controllerName = $this->getControllerName($name);
 
-        $modelNameSnakeCase = strtolower(preg_replace('/([a-z])([A-Z])/', '$1_$2', $modelName));
-        $stub = str_replace('TABLE_NAME', $modelNameSnakeCase, $stub);
-        $stub = str_replace('DummyModel', $modelName . 'Model', $stub);
-        $stub = str_replace('DummyService', $modelName . 'Service', $stub);
+        // 使用数组存储替换规则，提高代码可维护性
+        $replacements = [
+            'TABLE_NAME' => $this->convertToSnakeCase($controllerName),
+            'DummyModel' => $controllerName,
+            'DummyService' => $controllerName . 'Service'
+        ];
 
-        return $stub;
+        // 处理模型和服务的命名空间
+        $modelName = str_replace('Controller', '', $name);
+        $serviceName = str_replace('Controller', 'Service', $name);
+
+        // 获取命名空间并设置替换规则
+        $replacements['USED_DUMMY_MODEL'] = $this->getNamespaceReplacement($modelName);
+        $replacements['USED_DUMMY_SERVICE'] = $this->getNamespaceReplacement($serviceName);
+
+        // 批量执行替换
+        return str_replace(
+            array_keys($replacements),
+            array_values($replacements),
+            $stub
+        );
+    }
+
+    /**
+     * 将驼峰命名转换为下划线命名
+     */
+    private function convertToSnakeCase(string $input): string
+    {
+        return strtolower(preg_replace('/([a-z])([A-Z])/', '$1_$2', $input));
+    }
+
+    /**
+     * 获取命名空间替换内容
+     */
+    private function getNamespaceReplacement(string $name): string
+    {
+        $namespace = $this->findClassNamespace($name);
+        return $namespace ? 'use ' . $namespace . ';' : '';
     }
 
     /**
@@ -95,14 +127,16 @@ class MakeController extends GeneratorCommand
      * @param string $name
      * @return string
      */
-    private function getModelName($name): string
+    private function getControllerName($name): string
     {
-        $exName = explode('/', $name);
+        // 处理控制器名称，确保正确的目录分隔符
+        $controllerName = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $name);
+        $exName = explode(DIRECTORY_SEPARATOR, $controllerName);
         return str_replace('Controller', '', end($exName));
     }
 
     /**
-     * 获取基础控制器命名空间
+     * 获取基础控制器命名空间  
      * @param string $namespace
      * @return string
      */
@@ -168,5 +202,66 @@ class MakeController extends GeneratorCommand
     {
         $this->makeDirectory($path);
         $this->files->put($path, $this->buildClass($name));
+    }
+
+
+    /**
+     * 检测类名并返回完整命名空间
+     * @param string $className 类名
+     * @param array $namespaces 要搜索的命名空间列表
+     * @return string|null 返回完整的类名（包含命名空间）或 null
+     */
+    private function findClassNamespace($className, array $namespaces = []): ?string
+    {
+        // 标准化类名，统一使用反斜杠
+        $className = $this->normalizeClassName($className);
+
+        // 处理版本号
+        $version = config('rap.namespace.controller.version');
+        if ($version) {
+            // 确保版本号格式统一（添加斜线）
+            $normalizedVersion = trim($version, '\\/') . '\\';
+            if (strpos($className, $normalizedVersion) !== false) {
+                $className = str_replace($normalizedVersion, '', $className);
+            }
+        }
+
+        // 如果提供的是完整类名且类存在，直接返回
+        if (class_exists($className)) {
+            return $className;
+        }
+
+        // 合并并搜索命名空间
+        $searchNamespaces = array_merge([
+            'App\\Models\\',
+            'App\\Services\\',
+            'App\\Http\\Controllers\\',
+        ], $namespaces);
+
+        foreach ($searchNamespaces as $namespace) {
+            $fullClassName = $namespace . $className;
+            if ($this->isValidClass($fullClassName, $className)) {
+                return $fullClassName;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 标准化类名
+     */
+    private function normalizeClassName(string $className): string
+    {
+        return str_replace(['\\', '/'], '\\', $className);
+    }
+
+    /**
+     * 检查是否为有效的类
+     */
+    private function isValidClass(string $fullClassName, string $className): bool
+    {
+        return class_exists($fullClassName) ||
+            (str_contains($className, 'Service') && str_contains($fullClassName, '\\Services\\'));
     }
 }

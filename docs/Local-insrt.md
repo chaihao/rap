@@ -9,7 +9,7 @@ composer.json 文件中添加以下内容:
         "type": "path",
         "url": "rap", // 指向组件包所在的相对路径
         "options": {
-            "symlink": false // 是否创建符号链接 (false 为复制) 
+            "symlink": true // 是否创建符号链接 (false 为复制) 
         }
     }
 ]

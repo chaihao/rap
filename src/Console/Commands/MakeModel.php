@@ -66,7 +66,7 @@ class MakeModel extends GeneratorCommand
         // 获取所有字段，包括时间戳字段
         $allFields = $tableName ? $this->getAllFields($tableName) : [];
 
-        $stub = str_replace('TABLE', $tableName ? str_replace(env('DB_TABLE_PREFIX', ''), '', $tableName) : '', $stub);
+        $stub = str_replace('TABLE', $tableName ? str_replace(env('DB_PREFIX', ''), '', $tableName) : '', $stub);
 
         $stub = $this->replaceRules($stub, $list, $tableName);
 
@@ -154,7 +154,7 @@ class MakeModel extends GeneratorCommand
             return $name;
         }
 
-        $prefixTableName = env('DB_TABLE_PREFIX', '') .  $name;
+        $prefixTableName = env('DB_PREFIX', '') .  $name;
         if ($this->tableExists($databaseName, $prefixTableName)) {
             return $prefixTableName;
         }
@@ -267,7 +267,7 @@ class MakeModel extends GeneratorCommand
                 break;
         }
 
-        $item->Key === 'UNI' && $rules[] = 'unique:' . ltrim($tableName, env('DB_TABLE_PREFIX', '')) . ',' . $item->Field;
+        $item->Key === 'UNI' && $rules[] = 'unique:' . ltrim($tableName, env('DB_PREFIX', '')) . ',' . $item->Field;
 
         return implode('|', $rules);
     }

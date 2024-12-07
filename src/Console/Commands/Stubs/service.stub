@@ -4,7 +4,7 @@ namespace DummyNamespace;
 
 use Chaihao\Rap\Services\BaseService;
 use Chaihao\Rap\Exception\ApiException;
-use DummyModel;
+use USED_DUMMY_MODEL;
 
 class DummyClass extends BaseService
 {
@@ -26,7 +26,7 @@ class DummyClass extends BaseService
     /**
      * 初始化服务
      */
-    public function __construct(Dummy $model)
+    public function __construct(DummyModel $model)
     {
         $this->setModel($model);
     }
