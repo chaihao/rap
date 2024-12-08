@@ -63,8 +63,8 @@ class MakeModel extends GeneratorCommand
         $tableName = $this->option('table') ?: $this->getTableName();
         // 获取过滤后的字段列表（不包含时间戳字段）
         $list = $tableName ? $this->organizeData($tableName) : [];
-        // 获取所有字段，包括时间戳字段
-        $allFields = $tableName ? $this->getAllFields($tableName) : [];
+        // // 获取所有字段，包括时间戳字段
+        // $allFields = $tableName ? $this->getAllFields($tableName) : [];
 
         // 移除表前缀
         $stub = str_replace('TABLE', $tableName ? str_replace(env('DB_PREFIX', ''), '', $tableName) : '', $stub);
@@ -72,16 +72,10 @@ class MakeModel extends GeneratorCommand
         // 替换验证规则、场景等信息
         $stub = $this->replaceRules($stub, $list, $tableName);
 
-        // 检查是否需要软删除功能
-        $hasSoftDeletes = in_array('deleted_at', $allFields);
+        // // 检查是否需要软删除功能
+        // $hasSoftDeletes = in_array('deleted_at', $list);
 
-        if ($hasSoftDeletes) {
-            $stub = $this->addSoftDeletes($stub);
-        } else {
-            // 如果不存在 deleted_at 字段，移除相关的占位符
-            $stub = str_replace('USE_SOFT_DELETES_STATEMENT', '', $stub);
-            $stub = str_replace('USE_SOFT_DELETES', '', $stub);
-        }
+
 
         return parent::replaceClass($stub, $name);
     }
@@ -112,9 +106,10 @@ class MakeModel extends GeneratorCommand
                 ->where('table_schema', env('DB_DATABASE'))
                 ->where('table_name', $tableName)
                 ->get()
-                ->reject(function ($column) {
-                    return in_array($column->COLUMN_NAME, self::TIMESTAMP_FIELDS);
-                })
+                // ->reject(function ($column) {
+                //     // 跳过时间戳字段
+                //     return in_array($column->COLUMN_NAME, self::TIMESTAMP_FIELDS);
+                // })
                 ->map(function ($column) {
                     return (object)[
                         'Field' => $column->COLUMN_NAME,
@@ -212,8 +207,8 @@ class MakeModel extends GeneratorCommand
                 // 添加可填充字段
                 $fillable[] = $item->Field;
 
-                // 跳过id字段
-                if ($item->Field === 'id') {
+                // 跳过id字段 和 时间戳字段
+                if ($item->Field === 'id' || in_array($item->Field, self::TIMESTAMP_FIELDS)) {
                     continue;
                 }
 
@@ -224,9 +219,6 @@ class MakeModel extends GeneratorCommand
                 if ($fieldRules) {
                     $rules[$item->Field] = $fieldRules;
                 }
-
-
-
                 // 添加类型转换
                 if ($cast) {
                     $casts[$item->Field] = $cast;
@@ -255,7 +247,16 @@ class MakeModel extends GeneratorCommand
             $stub = str_replace('CASTS', $this->arrayToString($casts), $stub);
             $stub = str_replace('RULES', $this->arrayToString($rules), $stub);
             $stub = str_replace('SCENARIOS', $this->scenariosToString($scenarios), $stub);
-            $stub = str_replace('GET_LIST_FIELDS', self::TIMESTAMP_FIELDS, $stub);
+
+            // 添加软删除
+            if (in_array('deleted_at', $fillable)) {
+                $stub = $this->addSoftDeletes($stub);
+            } else {
+                // 如果不存在 deleted_at 字段，移除相关的占位符
+                $stub = str_replace('USE_SOFT_DELETES_STATEMENT', '', $stub);
+                $stub = str_replace('USE_SOFT_DELETES', '', $stub);
+            }
+
             return $stub;
         } catch (\Exception $e) {
             return str_replace(['RULES', 'SCENARIOS'], '', $stub);
