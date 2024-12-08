@@ -116,6 +116,7 @@ class MakeModel extends GeneratorCommand
                         'Type' => $column->COLUMN_TYPE,
                         'Null' => $column->IS_NULLABLE,
                         'Key' => $column->COLUMN_KEY === 'UNI' ? 'UNI' : '',
+                        'Default' => $column->COLUMN_DEFAULT,
                     ];
                 })
                 ->all();
@@ -301,8 +302,8 @@ class MakeModel extends GeneratorCommand
         $length = $typeInfo['length'];
         $decimals = $typeInfo['decimals'];
 
-        // 添加必填规则
-        if ($item->Null === 'NO') {
+        // 添加必填规则 - 只有当字段不允许为空且没有默认值时才添加
+        if ($item->Null === 'NO' && !isset($item->Default)) {
             $rules[] = 'required';
         }
 
