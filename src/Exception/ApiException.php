@@ -3,11 +3,11 @@
 namespace Chaihao\Rap\Exception;
 
 use Exception;
-use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
+use Illuminate\Http\Client\ConnectionException;
 
 class ApiException extends Exception
 {
@@ -155,7 +155,11 @@ class ApiException extends Exception
         }
 
         // 检测 Redis 连接异常
-        if ($e instanceof ConnectionException) {
+        if (
+            $e instanceof \RedisException ||
+            $e instanceof \Predis\Connection\ConnectionException ||
+            $e instanceof ConnectionException
+        ) {
             return self::redisConnectionError($e->getMessage());
         }
 
