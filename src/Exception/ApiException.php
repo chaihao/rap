@@ -3,6 +3,7 @@
 namespace Chaihao\Rap\Exception;
 
 use Exception;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
@@ -17,6 +18,8 @@ class ApiException extends Exception
     public const NOT_FOUND = Response::HTTP_NOT_FOUND;             // 404
     public const VALIDATION_ERROR = Response::HTTP_UNPROCESSABLE_ENTITY; // 422
     public const SERVER_ERROR = Response::HTTP_INTERNAL_SERVER_ERROR;    // 500
+    public const DB_CONNECTION_ERROR = self::SERVER_ERROR;    // 500
+    public const REDIS_CONNECTION_ERROR = self::SERVER_ERROR; // 500
 
     protected int $statusCode;
     protected mixed $errors = null;
@@ -115,12 +118,39 @@ class ApiException extends Exception
     }
 
     /**
+     * 创建 MySQL 连接失败异常
+     */
+    public static function mysqlConnectionError(string $message = 'MySQL连接失败'): static
+    {
+        return new static($message, self::DB_CONNECTION_ERROR);
+    }
+
+    /**
+     * 创建 Redis 连接失败异常
+     */
+    public static function redisConnectionError(string $message = 'Redis连接失败'): static
+    {
+        return new static($message, self::REDIS_CONNECTION_ERROR);
+    }
+
+    /**
      * 从其他异常创建 ApiException
      * @param Throwable $e 原始异常
      * @return static
      */
     public static function from(Throwable $e): static
     {
+        // 检测 MySQL 连接异常
+        if ($e instanceof \PDOException || $e instanceof \Illuminate\Database\QueryException) {
+            return self::mysqlConnectionError($e->getMessage());
+        }
+
+        // 检测 Redis 连接异常
+        if ($e instanceof ConnectionException) {
+            return self::redisConnectionError($e->getMessage());
+        }
+
+        // 处理 HTTP 异常
         $statusCode = $e instanceof HttpExceptionInterface
             ? $e->getStatusCode()
             : self::SERVER_ERROR;
