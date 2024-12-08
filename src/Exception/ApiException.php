@@ -130,6 +130,15 @@ class ApiException extends Exception
      */
     public static function redisConnectionError(string $message = 'Redis连接失败'): static
     {
+        // 根据错误信息判断具体的Redis错误类型
+        if (str_contains($message, 'WRONGPASS')) {
+            return new static('Redis认证失败：用户名或密码错误', self::REDIS_CONNECTION_ERROR);
+        }
+
+        if (str_contains($message, 'Connection refused')) {
+            return new static('Redis连接被拒绝：请检查Redis服务是否正常运行', self::REDIS_CONNECTION_ERROR);
+        }
+
         return new static($message, self::REDIS_CONNECTION_ERROR);
     }
 
