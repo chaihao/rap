@@ -136,6 +136,9 @@ class ApiException extends Exception
         return new static($message, self::DB_CONNECTION_ERROR);
     }
 
+
+
+
     /**
      * 创建 Redis 连接失败异常
      */
@@ -161,8 +164,19 @@ class ApiException extends Exception
     public static function from(Throwable $e): static
     {
         // 检测 MySQL 连接异常
-        if ($e instanceof \PDOException || $e instanceof \Illuminate\Database\QueryException) {
+        if ($e instanceof \PDOException) {
             return self::mysqlConnectionError($e->getMessage());
+        }
+
+        // 检测数据库查询异常
+        if ($e instanceof \Illuminate\Database\QueryException) {
+            $message = '数据库操作错误';
+            $debug = [
+                'sql_error' => $e->getMessage(),
+                'sql' => $e->getSql() ?? '',
+                'bindings' => $e->getBindings() ?? []
+            ];
+            return new static($message, self::SERVER_ERROR, $debug);
         }
 
         // 检测 Redis 连接异常
