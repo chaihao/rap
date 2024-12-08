@@ -17,7 +17,7 @@ class ArticleController extends BaseController
      * 初始化服务和模型
      * 必须实现的抽象方法
      */
-    protected function init(): void
+    protected function initServiceAndModel(): void
     {
         $this->service = app(ArticleService::class);
         $this->model = app(Article::class);
@@ -67,4 +67,4 @@ class ArticleController extends BaseController
             return $this->handleException($e);
         }
     }
-} 
+}

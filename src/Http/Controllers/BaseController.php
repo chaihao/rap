@@ -23,13 +23,13 @@ abstract class BaseController extends Controller
     {
         $this->request = $request;
         $this->response = app(Response::class);
-        $this->init();
+        $this->initServiceAndModel();
     }
 
     /**
      * 初始化服务和模型
      */
-    abstract protected function init(): void;
+    abstract protected function initServiceAndModel(): void;
 
     /**
      * 列表接口

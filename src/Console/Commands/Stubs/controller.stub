@@ -12,7 +12,7 @@ class DummyClass extends BaseController
     /**
      * 初始化服务和模型
      */
-    protected function init(): void
+    protected function initServiceAndModel(): void
     {
         $this->service = app(DummyService::class);
         $this->model = app(DummyModel::class);
