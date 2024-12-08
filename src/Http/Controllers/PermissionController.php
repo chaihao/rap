@@ -12,7 +12,7 @@ use Illuminate\Http\JsonResponse;
 
 class PermissionController extends BaseController
 {
-    protected function init(): void
+    protected function initServiceAndModel(): void
     {
         $this->service = app(PermissionService::class);
         $this->model = app(Permission::class);

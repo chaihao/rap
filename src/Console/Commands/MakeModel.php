@@ -209,6 +209,10 @@ class MakeModel extends GeneratorCommand
             ];
 
             foreach ($list as $item) {
+                // 添加可填充字段
+                $fillable[] = $item->Field;
+
+                // 跳过id字段
                 if ($item->Field === 'id') {
                     continue;
                 }
@@ -221,8 +225,7 @@ class MakeModel extends GeneratorCommand
                     $rules[$item->Field] = $fieldRules;
                 }
 
-                // 添加可填充字段
-                $fillable[] = $item->Field;
+
 
                 // 添加类型转换
                 if ($cast) {
@@ -252,7 +255,7 @@ class MakeModel extends GeneratorCommand
             $stub = str_replace('CASTS', $this->arrayToString($casts), $stub);
             $stub = str_replace('RULES', $this->arrayToString($rules), $stub);
             $stub = str_replace('SCENARIOS', $this->scenariosToString($scenarios), $stub);
-
+            $stub = str_replace('GET_LIST_FIELDS', self::TIMESTAMP_FIELDS, $stub);
             return $stub;
         } catch (\Exception $e) {
             return str_replace(['RULES', 'SCENARIOS'], '', $stub);
@@ -290,29 +293,29 @@ class MakeModel extends GeneratorCommand
     {
         $rules = [];
         $casts = '';
-        
+
         // 解析字段类型信息（类型、长度、小数位）
         $typeInfo = $this->parseFieldType($item->Type);
         $baseType = $typeInfo['type'];
         $length = $typeInfo['length'];
         $decimals = $typeInfo['decimals'];
-        
+
         // 添加必填规则
         if ($item->Null === 'NO') {
             $rules[] = 'required';
         }
-        
+
         // 根据字段类型设置对应的验证规则和类型转换
         $typeRules = $this->getTypeBasedRules($baseType, $length, $decimals);
         $rules = array_merge($rules, $typeRules['rules']);
         $casts = $typeRules['cast'];
-        
+
         // 添加唯一字段验证规则
         if ($item->Key === 'UNI') {
             $tableName = ltrim($tableName, env('DB_PREFIX', ''));
             $rules[] = "unique:{$tableName},{$item->Field}";
         }
-        
+
         return [implode('|', array_filter($rules)), $casts];
     }
 
@@ -323,7 +326,7 @@ class MakeModel extends GeneratorCommand
     {
         $matches = [];
         preg_match('/(\w+)(?:\((\d+)(?:,(\d+))?\))?/', strtolower($type), $matches);
-        
+
         return [
             'type' => $matches[1] ?? '',
             'length' => $matches[2] ?? null,
@@ -338,7 +341,7 @@ class MakeModel extends GeneratorCommand
     {
         $rules = [];
         $cast = '';
-        
+
         // 定义数据类型映射关系
         $typeMap = [
             'integer' => ['int', 'bigint', 'tinyint'],        // 整数类型
@@ -347,27 +350,27 @@ class MakeModel extends GeneratorCommand
             'datetime' => ['timestamp', 'datetime'],          // 日期时间类型
             'array' => ['json']                              // JSON类型
         ];
-        
+
         // 根据字段类型设置相应的验证规则
         foreach ($typeMap as $castType => $types) {
             if (in_array($baseType, $types)) {
                 $cast = $castType;
                 $rules[] = $castType === 'numeric' ? 'numeric' : $castType;
-                
+
                 // 字符串类型添加长度限制
                 if ($length && in_array($baseType, ['char', 'varchar'])) {
                     $rules[] = "max:{$length}";
                 }
-                
+
                 // 数值类型添加格式验证
                 if ($castType === 'numeric' && $length && $decimals) {
                     $rules[] = "regex:/^\d{1,{$length}}(\.\d{1,{$decimals}})?$/";
                 }
-                
+
                 break;
             }
         }
-        
+
         return [
             'rules' => $rules,
             'cast' => $cast

@@ -51,6 +51,7 @@ class DummyClass extends BaseModel
     {
         return array_merge(parent::getListFields(), [
             // 在此添加额外的列表字段
+            GET_LIST_FIELDS
         ]);
     }
 

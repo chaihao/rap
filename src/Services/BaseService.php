@@ -88,7 +88,7 @@ abstract class BaseService
         // 格式化输出
         $this->formatListOutput($data);
 
-        return paginateFormat($data);
+        return $this->paginateFormat($data);
     }
 
 
@@ -101,9 +101,9 @@ abstract class BaseService
     protected function formatListOutput($data): void
     {
         if (!$data->isEmpty()) {
-            // 修改为使用闭包函数调用 processFields
             $data->setCollection($data->getCollection()->map(function ($item) {
-                return $this->getModel()->formatOutput($item);
+                // 先将模型转换为数组，再进行格式化
+                return $this->getModel()->formatOutput($item->toArray());
             }));
         }
     }
@@ -140,7 +140,13 @@ abstract class BaseService
      */
     protected function applySearchConditions($query, array $params): void
     {
+        // 参数处理
+        $fillable = $this->getModel()->getFillable();
         foreach ($params as $field => $value) {
+            if (!in_array($field, $fillable)) {
+                continue;
+            }
+            // 如果值为空且不为0，则跳过
             if (empty($value) && $value !== '0') {
                 continue;
             }
@@ -927,7 +933,7 @@ abstract class BaseService
     protected function successList($data = null, string $message = '操作成功'): array
     {
         return $this->success(
-            $data ? paginateFormat($data) : null,
+            $data ? $this->paginateFormat($data) : null,
             $message
         );
     }
@@ -1112,6 +1118,23 @@ abstract class BaseService
             'whereMorphedTo',
             'whereJsonContains',
             'whereJsonLength',
+        ];
+    }
+
+    /**
+     * 格式化分页数据
+     * 
+     * @param \Illuminate\Pagination\LengthAwarePaginator $data
+     * @return array
+     */
+    protected function paginateFormat($data): array
+    {
+        return [
+            'list' => $data->items(),
+            'total' => $data->total(),
+            'current_page' => $data->currentPage(),
+            'last_page' => $data->lastPage(),
+            'per_page' => $data->perPage(),
         ];
     }
 }

@@ -13,7 +13,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class StaffController extends BaseController
 {
-    protected function init(): void
+    protected function initServiceAndModel(): void
     {
         $this->service = app(StaffService::class);
         $this->model = app(Staff::class);
