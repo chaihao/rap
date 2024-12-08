@@ -140,7 +140,7 @@ abstract class BaseModel extends Model
      */
     public function getListFields(): array
     {
-        return ['id', 'status', 'created_at', 'updated_at'];
+        return $this->fillable;
     }
 
     /**

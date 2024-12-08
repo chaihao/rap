@@ -239,7 +239,7 @@ abstract class BaseController extends Controller
      */
     protected function handleException(\Throwable $e): JsonResponse
     {
-        $message = $e instanceof ApiException ? $e->getMessage() : '系统错误';
+        $message = $e instanceof ApiException ? $e->getMessage() : (config('app.debug') ? $e->getMessage() : '系统错误');
         $code = $e instanceof ApiException ? $e->getCode() : 500;
 
         return $this->failed($message, $code);
