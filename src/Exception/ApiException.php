@@ -9,6 +9,17 @@ use Throwable;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Illuminate\Http\Client\ConnectionException;
 
+/**
+ * @method static static from(\Throwable $e)
+ * @method static static redisConnectionError(string $message = 'Redis连接失败')
+ * @method static static mysqlConnectionError(string $message = 'MySQL连接失败')
+ * @method static static invalidCredentials(string $message = '用户名或密码错误')
+ * @method static static failed(string $message = '操作失败')
+ * @method static static forbidden(string $message = '禁止访问')
+ * @method static static notFound(string $message = '资源未找到')
+ * @method static static unauthorized(string $message = '未授权访问')
+ * @method static static validationError(string $message = '验证失败', mixed $errors = null)
+ */
 class ApiException extends Exception
 {
     // HTTP 状态码常量定义
