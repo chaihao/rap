@@ -54,7 +54,7 @@ class Article extends BaseModel
     /**
      * 自定义配置
      */
-    protected bool $useCache = true; // 启用缓存
+    protected bool $modelCache = true; // 启用缓存
     protected int $cacheTTL = 3600; // 缓存1小时
     protected string $cachePrefix = 'article';
     protected int $defaultPageSize = 15;

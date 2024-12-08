@@ -38,6 +38,12 @@ class DummyClass extends BaseModel
         SCENARIOS
     ];
 
+
+    // 缓存配置
+    protected bool $modelCache = false; // 是否启用缓存
+    protected int $cacheTTL = 3600; // 缓存时间
+    protected string $cachePrefix = ''; // 缓存前缀(为空前缀为表名)
+
     /**
      * 自定义列表展示字段
      */

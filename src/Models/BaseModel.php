@@ -35,7 +35,7 @@ abstract class BaseModel extends Model
     ];
 
     // 缓存配置
-    protected bool $useCache = false;
+    protected bool $modelCache = false;
     protected int $cacheTTL = 3600;
     protected string $cachePrefix = '';
 
@@ -89,7 +89,7 @@ abstract class BaseModel extends Model
      */
     public function shouldCache(): bool
     {
-        return $this->useCache;
+        return $this->modelCache;
     }
 
     /**
