@@ -2,22 +2,22 @@
 
 return [
     'guards' => [
-        config('rap.api.guard') => [
+        config('rap.api.guard', 'api') => [
             'driver' => 'jwt',
-            'provider' => 'staff',
+            'provider' =>  config('rap.api.guard', 'api'),
         ],
     ],
 
     'providers' => [
-        'staff' => [
+        config('rap.api.guard', 'api') => [
             'driver' => 'eloquent',
-            'model' => \Chaihao\Rap\Models\Auth\Staff::class,
+            'model' => config('rap.auth.staff.model', \Chaihao\Rap\Models\Auth\Staff::class),
         ],
     ],
 
     'passwords' => [
-        'staff' => [
-            'provider' => 'staff',
+        config('rap.api.guard', 'api') => [
+            'provider' =>  config('rap.api.guard', 'api'),
             'table' => 'password_reset_tokens',
             'expire' => 60,
             'throttle' => 60,

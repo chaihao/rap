@@ -65,12 +65,14 @@ abstract class BaseController extends Controller
     /**
      * 编辑接口
      */
-    public function edit(int $id): JsonResponse
+    public function edit(int|null $id = null): JsonResponse
     {
         try {
-            $params = $this->request->all();
-            $params['id'] = $id;
-
+            if (empty($id)) {
+                $params = $this->request->all();
+            } else {
+                $params['id'] = $id;
+            }
             // 验证数据
             $this->checkValidator($params, 'edit');
 

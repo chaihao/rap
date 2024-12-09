@@ -32,21 +32,26 @@ class CheckAuth
                 return $this->unauthorizedResponse('无效的令牌');
             }
 
-            $staff = auth($guard)->user();
+            // 验证令牌并获取用户
+            $staff = JWTAuth::authenticate($token);
+
             // 用户未登录或会话已过期
             if (!$staff) {
                 return $this->unauthorizedResponse('用户未登录或会话已过期');
             }
-            // 用户状态
+
+            // 用户状态检查
             if (!$staff->status) {
                 return $this->unauthorizedResponse('用户已禁用');
             }
 
-            $staffClass = config('rap.models.staff.class');
+            // 验证用户类型
+            $staffClass = config('rap.auth.staff.model', \Chaihao\Rap\Models\Auth\Staff::class);
             if (!($staff instanceof $staffClass)) {
                 return $this->unauthorizedResponse('无效的用户类型');
             }
 
+            // 设置当前用户信息
             CurrentStaff::setStaff((object)$staff);
             $request->merge(['auth_staff' => $staff]);
         } catch (JWTException $e) {

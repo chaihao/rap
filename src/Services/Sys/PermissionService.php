@@ -20,7 +20,7 @@ class PermissionService extends BaseService
 
    public function __construct()
    {
-      $this->model = app(config('rap.models.staff.class'));
+      $this->model = app(config('rap.auth.staff.model'));
    }
 
    /**
@@ -88,62 +88,62 @@ class PermissionService extends BaseService
    }
 
 
-  /**
+   /**
     * 获取用户的所有权限
     * @param int $userId 用户ID
     * @param string $fieldColumn 需要获取的字段名
     * @return array
     */
-    public function getUserPermissions(int $userId, string $fieldColumn = ''): array
-    {
-       $user = $this->model::find($userId);
-       if (!$user) {
-          throw new ApiException('用户不存在');
-       }
+   public function getUserPermissions(int $userId, string $fieldColumn = ''): array
+   {
+      $user = $this->model::find($userId);
+      if (!$user) {
+         throw new ApiException('用户不存在');
+      }
 
-       $permissions = $user->getAllPermissions();
+      $permissions = $user->getAllPermissions();
 
-       if ($fieldColumn && in_array($fieldColumn, ['id', 'name', 'slug'])) {
-          return $permissions->pluck($fieldColumn)->toArray();
-       }
+      if ($fieldColumn && in_array($fieldColumn, ['id', 'name', 'slug'])) {
+         return $permissions->pluck($fieldColumn)->toArray();
+      }
 
-       return $permissions->map(function ($permission) {
-          return [
-             'id' => $permission->id,
-             'name' => $permission->name,
-             'method' => $permission->method,
-             'uri' => $permission->uri,
-             'slug' => $permission->slug,
-             'group' => $permission->group,
-             'group_name' => $permission->group_name
-          ];
-       })->toArray();
-    }
+      return $permissions->map(function ($permission) {
+         return [
+            'id' => $permission->id,
+            'name' => $permission->name,
+            'method' => $permission->method,
+            'uri' => $permission->uri,
+            'slug' => $permission->slug,
+            'group' => $permission->group,
+            'group_name' => $permission->group_name
+         ];
+      })->toArray();
+   }
 
-    /**
-     * 获取用户的所有角色
-     * @param int $userId
-     * @return array
-     */
-    public function getUserRoles(int $userId, string $fieldColumn = ''): array
-    {
-       $user = $this->model::find($userId);
-       if (!$user) {
-          throw new ApiException('用户不存在');
-       }
-       $roles = $user->roles;
-       if ($fieldColumn && in_array($fieldColumn, ['id', 'name', 'slug'])) {
-          return $roles->pluck($fieldColumn)->toArray();
-       }
-       return $roles->map(function ($role) {
-          return [
-             'id' => $role->id,
-             'name' => $role->name,
-             'slug' => $role->slug,
-             'guard_name' => $role->guard_name
-          ];
-       })->toArray();
-    }
+   /**
+    * 获取用户的所有角色
+    * @param int $userId
+    * @return array
+    */
+   public function getUserRoles(int $userId, string $fieldColumn = ''): array
+   {
+      $user = $this->model::find($userId);
+      if (!$user) {
+         throw new ApiException('用户不存在');
+      }
+      $roles = $user->roles;
+      if ($fieldColumn && in_array($fieldColumn, ['id', 'name', 'slug'])) {
+         return $roles->pluck($fieldColumn)->toArray();
+      }
+      return $roles->map(function ($role) {
+         return [
+            'id' => $role->id,
+            'name' => $role->name,
+            'slug' => $role->slug,
+            'guard_name' => $role->guard_name
+         ];
+      })->toArray();
+   }
 
    /**
     * 分配角色
