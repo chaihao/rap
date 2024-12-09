@@ -216,7 +216,7 @@ class MakeServices extends GeneratorCommand
     private function handleControllerFile($serviceInfo)
     {
         // 获取并格式化版本号
-        $version = $this->formatVersionPath(config('rap.namespace.controller.version'));
+        $version = $this->formatVersionPath(config('rap.controller.version',''));
 
         // 构建控制器信息
         $controllerInfo = $this->buildControllerInfo($serviceInfo, $version);
