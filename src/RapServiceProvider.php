@@ -43,7 +43,6 @@ class RapServiceProvider extends ServiceProvider
                 'passwords' => array_merge($rapAuth['passwords'] ?? [], $config['passwords'] ?? []),
             ], $config);
 
-            dd($merged);
             $this->app['config']->set('auth', $merged);
         });
 
