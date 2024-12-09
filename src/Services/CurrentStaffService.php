@@ -17,6 +17,7 @@ class CurrentStaffService extends BaseService
       }
    }
 
+
    public function getStaff(): ?Staff
    {
       return $this->staff;
@@ -35,7 +36,7 @@ class CurrentStaffService extends BaseService
    // 检查当前用户是否为超级管理员
    public function isSuper(): bool
    {
-      if (!$this->staff || !$this->staff->is_super) {
+      if (!$this->staff || !($this->staff->is_super ?? false)) {
          return false;
       }
       return true;
@@ -44,7 +45,7 @@ class CurrentStaffService extends BaseService
    // 检查当前用户是否为管理员
    public function isAdmin(): bool
    {
-      if (!$this->staff || (!$this->hasRole('admin') && !$this->staff->is_super)) {
+      if (!$this->staff || (!$this->hasRole('admin') && !($this->staff->is_super ?? false))) {
          return false;
       }
       return true;
@@ -59,7 +60,7 @@ class CurrentStaffService extends BaseService
    // 使用缓存获取用户数据
    public function getStaffWithCache(): ?Staff
    {
-      if (!$this->staff) {
+      if (!$this->staff || !isset($this->staff->id)) {
          return null;
       }
 

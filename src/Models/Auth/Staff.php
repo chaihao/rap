@@ -22,24 +22,11 @@ class Staff extends Authenticatable implements JWTSubject
         'sex' => 'integer'
     ];
 
-    public function __construct(array $attributes = [])
-    {
-        parent::__construct($attributes);
-
-        // 从配置中读取表名、字段和类型转换
-        $config = config('rap.models.staff');
-
-        if ($config) {
-            $this->table = $config['table'] ?? 'staff';
-            $this->fillable = $config['fillable'] ?? $this->fillable;
-            $this->casts = array_merge($this->casts, $config['casts'] ?? []);
-        }
-    }
+    protected $hidden = ['password', 'salt'];
 
     const DEFAULT_IS_SUPPER_YES = 1;
     const DEFAULT_IS_SUPPER_NO = 0;
 
-    protected $hidden = ['password', 'salt'];
     public $rules = [
         "phone" => "required|max:11",
         "password" => "required|max:255",

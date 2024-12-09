@@ -102,9 +102,10 @@ class MakeModel extends GeneratorCommand
     public function organizeData($tableName)
     {
         try {
-            return DB::table('information_schema.columns')
-                ->where('table_schema', env('DB_DATABASE'))
-                ->where('table_name', $tableName)
+            // 首先尝试使用 INFORMATION_SCHEMA
+            return DB::table('INFORMATION_SCHEMA.COLUMNS')
+                ->where('TABLE_SCHEMA', env('DB_DATABASE'))
+                ->where('TABLE_NAME', $tableName)
                 ->get()
                 // ->reject(function ($column) {
                 //     // 跳过时间戳字段
@@ -121,8 +122,22 @@ class MakeModel extends GeneratorCommand
                 })
                 ->all();
         } catch (\Throwable $th) {
-            $this->error("无法获取表 {$tableName} 的结构信息：" . $th->getMessage());
-            return [];
+            // 如果失败，尝试使用 DESCRIBE
+            try {
+                $columns = DB::select("DESCRIBE `{$tableName}`");
+                return collect($columns)->map(function ($column) {
+                    return (object)[
+                        'Field' => $column->Field,
+                        'Type' => $column->Type,
+                        'Null' => $column->Null,
+                        'Key' => $column->Key === 'UNI' ? 'UNI' : '',
+                        'Default' => $column->Default,
+                    ];
+                })->all();
+            } catch (\Throwable $th2) {
+                $this->error("无法获取表 {$tableName} 的结构信息：" . $th2->getMessage());
+                return [];
+            }
         }
     }
 

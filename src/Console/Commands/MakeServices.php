@@ -127,11 +127,11 @@ class MakeServices extends GeneratorCommand
     private function handleRelatedFiles($serviceInfo)
     {
         try {
-            if (config('rap.create_services.model') && !$this->handleModelFile($serviceInfo)) {
+            if (config('rap.create_services.model', true) && !$this->handleModelFile($serviceInfo)) {
                 return false;
             }
 
-            if (config('rap.create_services.controller') && !$this->handleControllerFile($serviceInfo)) {
+            if (config('rap.create_services.controller', true) && !$this->handleControllerFile($serviceInfo)) {
                 return false;
             }
 

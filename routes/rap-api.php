@@ -1,29 +1,36 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Chaihao\Rap\Http\Controllers\StaffController;
+use Chaihao\Rap\Http\Controllers\PermissionController;
 
 $prefix = config('rap.api.prefix', '');
 
 Route::prefix($prefix)->group(function () {
-    // 不需要验证的路由
-    Route::withoutMiddleware(['permission', 'check.auth'])->name('员工管理.')->group(function () {
-        Route::post('auth/login', [\Chaihao\Rap\Http\Controllers\StaffController::class, 'login'])->name('登录账号');
-        Route::post('auth/register', [\Chaihao\Rap\Http\Controllers\StaffController::class, 'register'])->name('注册账号');
-    });
 
+
+    if (config('rap.models.staff.class') == \Chaihao\Rap\Models\Auth\Staff::class) {
+        // 不需要验证的路由
+        Route::withoutMiddleware(['permission', 'check.auth'])->name('员工管理.')->group(function () {
+            Route::post('auth/login', [StaffController::class, 'login'])->name('登录账号');
+            Route::post('auth/register', [StaffController::class, 'register'])->name('注册账号');
+        });
+    }
     // 需要验证的路由使用 rap-api 中间件组
     Route::middleware(['rap-api', 'permission'])->group(function () {
-        // 员工
-        Route::prefix('auth')->controller(\Chaihao\Rap\Http\Controllers\StaffController::class)->name('员工管理.')->group(function () {
-            Route::post('staff_info', 'staffInfo')->name('获取员工信息');
-            Route::post('add', 'addStaff')->name('添加账户');
-            Route::post('logout', 'logout')->name('登出');
-            Route::post('edit', 'edit')->name('编辑账户');
-            Route::post('edit_password', 'editPassword')->name('编辑账户密码');
-        });
+        if (config('rap.models.staff.class') == \Chaihao\Rap\Models\Auth\Staff::class) {
+            // 员工
+            Route::prefix('auth')->controller(StaffController::class)->name('员工管理.')->group(function () {
+                Route::post('staff_info', 'staffInfo')->name('获取员工信息');
+                Route::post('add', 'addStaff')->name('添加账户');
+                Route::post('logout', 'logout')->name('登出');
+                Route::post('edit', 'edit')->name('编辑账户');
+                Route::post('edit_password', 'editPassword')->name('编辑账户密码');
+            });
+        }
 
         // 权限
-        Route::middleware(['rap-api'])->prefix('permission')->controller(\Chaihao\Rap\Http\Controllers\PermissionController::class)->name('权限管理.')->group(function () {
+        Route::middleware(['rap-api'])->prefix('permission')->controller(PermissionController::class)->name('权限管理.')->group(function () {
             Route::post('add',  'addPermission')->name('添加权限');
             Route::post('get_all',  'getAllPermissions')->name('获取所有权限');
             Route::post('create_role',  'createRole')->name('创建角色');

@@ -14,9 +14,12 @@ return [
         'guard' => env('RAP_API_GUARD', 'api'), // 默认api守卫
     ],
     'namespace' => [
-        'controller' => [
-            'version' => env('RAP_CONTROLLER_VERSION', 'V1\\'), // 控制器版本
-        ],
+        'App\\Models\\',
+        'App\\Services\\',
+        'App\\Http\\Controllers\\',
+    ],
+    'controller' => [
+        'version' => env('RAP_CONTROLLER_VERSION', 'V1\\'), // 控制器版本
     ],
     'create_services' => [
         'model' => env('RAP_CREATE_SERVICES_MODEL', true), // 创建service时，同时创建model
@@ -26,21 +29,6 @@ return [
         'staff' => [
             'class' => \Chaihao\Rap\Models\Auth\Staff::class,
             'table' => 'staff',
-            'fillable' => [
-                "id",
-                "phone",
-                "password",
-                "name",
-                "email",
-                "salt",
-                "avatar",
-                "ip",
-                "last_login_at",
-                "sex",
-                "is_super",
-                "remark",
-                "status"
-            ],
         ],
     ],
 ];

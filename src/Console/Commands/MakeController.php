@@ -241,7 +241,7 @@ class MakeController extends GeneratorCommand
 
         // 只有在查找 Model 和 Service 时才移除版本号
         if (str_contains($className, 'Service') || !str_contains($className, 'Controller')) {
-            $version = config('rap.namespace.controller.version');
+            $version = config('rap.controller.version', '');
             if ($version) {
                 $className = $this->removeVersionFromClassName($className, $version);
             }
