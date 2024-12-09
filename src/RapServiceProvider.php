@@ -36,13 +36,14 @@ class RapServiceProvider extends ServiceProvider
             $config = $this->app['config']->get('auth', []);
             $rapAuth = require __DIR__ . '/../config/auth.php';
 
-            // 使用 array_merge 而不是 array_merge_recursive
-            $merged = array_merge($config, [
-                'guards' => array_merge($config['guards'] ?? [], $rapAuth['guards'] ?? []),
-                'providers' => array_merge($config['providers'] ?? [], $rapAuth['providers'] ?? []),
-                'passwords' => array_merge($config['passwords'] ?? [], $rapAuth['passwords'] ?? []),
-            ]);
+            // 修改合并顺序，让主项目配置覆盖组件配置
+            $merged = array_merge([
+                'guards' => array_merge($rapAuth['guards'] ?? [], $config['guards'] ?? []),
+                'providers' => array_merge($rapAuth['providers'] ?? [], $config['providers'] ?? []),
+                'passwords' => array_merge($rapAuth['passwords'] ?? [], $config['passwords'] ?? []),
+            ], $config);
 
+            dd($merged);
             $this->app['config']->set('auth', $merged);
         });
 
