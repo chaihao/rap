@@ -76,7 +76,7 @@ abstract class BaseController extends Controller
             // 验证数据
             $this->checkValidator($params, 'edit');
 
-            $data = $this->service->edit($id, $params);
+            $data = $this->service->edit($params['id'], $params);
             return $this->success($data);
         } catch (\Throwable $e) {
             return $this->handleException($e);
@@ -86,13 +86,19 @@ abstract class BaseController extends Controller
     /**
      * 删除接口
      */
-    public function delete(int $id): JsonResponse
+    public function delete(int|null $id = null): JsonResponse
     {
         try {
-            // 验证ID
-            $this->checkValidator(['id' => $id], 'delete');
+            if (empty($id)) {
+                $params = $this->request->all();
+            } else {
+                $params['id'] = $id;
+            }
 
-            $this->service->delete($id);
+            // 验证ID
+            $this->checkValidator($params, 'delete');
+
+            $this->service->delete($params['id']);
             return $this->success(null, '删除成功');
         } catch (\Throwable $e) {
             return $this->handleException($e);
@@ -102,13 +108,18 @@ abstract class BaseController extends Controller
     /**
      * 详情接口
      */
-    public function detail(int $id): JsonResponse
+    public function detail(int|null $id = null): JsonResponse
     {
         try {
+            if (empty($id)) {
+                $params = $this->request->all();
+            } else {
+                $params['id'] = $id;
+            }
             // 验证ID
-            $this->checkValidator(['id' => $id], 'detail');
+            $this->checkValidator($params, 'detail');
 
-            $data = $this->service->detail($id);
+            $data = $this->service->detail($params['id']);
             return $this->success($data);
         } catch (\Throwable $e) {
             return $this->handleException($e);
@@ -274,14 +285,19 @@ abstract class BaseController extends Controller
     /**
      * 修改状态
      */
-    public function status(int $id): JsonResponse
+    public function status(int|null $id = null): JsonResponse
     {
         try {
+            if (empty($id)) {
+                $params = $this->request->all();
+            } else {
+                $params['id'] = $id;
+            }
             // 验证ID
-            $this->checkValidator(['id' => $id], 'status');
+            $this->checkValidator($params, 'status');
 
             $status = $this->request->input('status');
-            $data = $this->service->editStatus($id, $status);
+            $data = $this->service->editStatus($params['id'], $status);
             return $this->success($data);
         } catch (\Throwable $e) {
             return $this->handleException($e);
