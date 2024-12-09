@@ -33,7 +33,7 @@ class CheckAuth
             }
 
             // 验证令牌并获取用户
-            $staff = JWTAuth::authenticate($token);
+            $staff = JWTAuth::parseToken()->authenticate();
 
             // 用户未登录或会话已过期
             if (!$staff) {

@@ -14,7 +14,9 @@ class CurrentStaffService extends BaseService
       $staffClass = config('rap.auth.staff.model', Staff::class);
       if ($staff === null || $staff instanceof $staffClass) {
          $this->staff = $staff;
+         return;
       }
+      throw new \InvalidArgumentException('Staff must be null or instance of ' . $staffClass);
    }
 
 
@@ -25,7 +27,10 @@ class CurrentStaffService extends BaseService
 
    public function getId(): ?int
    {
-      return $this->staff?->id;
+      if (!$this->staff || !isset($this->staff->id)) {
+         return null;
+      }
+      return $this->staff->id;
    }
 
    public function hasRole($role): bool
