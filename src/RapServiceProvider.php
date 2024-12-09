@@ -36,13 +36,14 @@ class RapServiceProvider extends ServiceProvider
             $config = $this->app['config']->get('auth', []);
             $rapAuth = require __DIR__ . '/../config/auth.php';
 
-            // 修改合并顺序，让主项目配置覆盖组件配置
-            $merged = array_merge([
+            // 正确的合并顺序：保留两边的配置，但允许主项目配置覆盖组件配置
+            $merged = array_merge_recursive([
+                'defaults' => $config['defaults'] ?? [],
                 'guards' => array_merge($rapAuth['guards'] ?? [], $config['guards'] ?? []),
                 'providers' => array_merge($rapAuth['providers'] ?? [], $config['providers'] ?? []),
                 'passwords' => array_merge($rapAuth['passwords'] ?? [], $config['passwords'] ?? []),
-            ], $config);
-
+                'password_timeout' => $config['password_timeout'] ?? null,
+            ]);
             $this->app['config']->set('auth', $merged);
         });
 
