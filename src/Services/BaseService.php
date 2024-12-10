@@ -958,23 +958,50 @@ abstract class BaseService
      * @param array $data 需要验证的数据
      * @param string|array $scenario 场景名称|验证规则
      * @param array $message 错误信息
+     * @param array $attributes 自定义参数说明
      * @throws ApiException
      */
-    public function checkValidator(array $data, string|array $scenario, array $message = []): void
+    public function checkValidator(array $data, string|array $scenario, array $message = [], array $attributes = []): void
     {
-        if (is_string($scenario)) {
-            $rules = $this->getRulesByScenario($scenario, $data);
-        } else {
-            $rules = $scenario;
-        }
+        $rules = is_string($scenario) ? $this->getRulesByScenario($scenario, $data) : $scenario;
 
+        $message = $message ?: $this->getValidatorMessage();
+        // 验证数据
         $validator = Validator::make($data, $rules, $message);
+
+        // 如果没有传入自定义属性，则使用模型中定义的属性
+        $customAttributes = $attributes ?: $this->getValidatorAttributes();
+
+        if (!empty($customAttributes)) {
+            $validator->setAttributeNames($customAttributes);
+        }
         if ($validator->fails()) {
-            // throw new ApiException($validator->errors()->first() ?? [], 400);
             throw ApiException::validationError($validator->errors()->first() ?? []);
         }
     }
+    /**
+     * 获取验证器错误信息
+     * @return array
+     */
+    public function getValidatorMessage(): array
+    {
+        if (method_exists($this->getModel(), 'setValidatorMessage')) {
+            return $this->getModel()->setValidatorMessage();
+        }
+        return [];
+    }
 
+    /**
+     * 获取验证器自定义属性
+     * @return array
+     */
+    public function getValidatorAttributes(): array
+    {
+        if (method_exists($this->getModel(), 'setValidatorAttributes')) {
+            return $this->getModel()->setValidatorAttributes();
+        }
+        return [];
+    }
     /**
      * 获取单条记录
      * @param array $params 查询参数

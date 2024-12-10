@@ -118,13 +118,14 @@ class MakeModel extends GeneratorCommand
                         'Null' => $column->IS_NULLABLE,
                         'Key' => $column->COLUMN_KEY === 'UNI' ? 'UNI' : '',
                         'Default' => $column->COLUMN_DEFAULT,
+                        'Comment' => $column->COLUMN_COMMENT ?? '',
                     ];
                 })
                 ->all();
         } catch (\Throwable $th) {
-            // 如果失败，尝试使用 DESCRIBE
+            // 如果失败，使用 SHOW FULL COLUMNS 替代 DESCRIBE
             try {
-                $columns = DB::select("DESCRIBE `{$tableName}`");
+                $columns = DB::select("SHOW FULL COLUMNS FROM `{$tableName}`");
                 return collect($columns)->map(function ($column) {
                     return (object)[
                         'Field' => $column->Field,
@@ -132,6 +133,7 @@ class MakeModel extends GeneratorCommand
                         'Null' => $column->Null,
                         'Key' => $column->Key === 'UNI' ? 'UNI' : '',
                         'Default' => $column->Default,
+                        'Comment' => $column->Comment ?? '',
                     ];
                 })->all();
             } catch (\Throwable $th2) {
@@ -214,6 +216,7 @@ class MakeModel extends GeneratorCommand
             $rules = [];
             $fillable = [];
             $casts = [];
+            $setValidatorAttributes = [];
             $scenarioFields = [
                 'add' => [],
                 'edit' => []
@@ -222,6 +225,10 @@ class MakeModel extends GeneratorCommand
             foreach ($list as $item) {
                 // 添加可填充字段
                 $fillable[] = $item->Field;
+                // 添加验证器属性
+                if ($item->Comment) {
+                    $setValidatorAttributes[$item->Field] = $item->Comment;
+                }
 
                 // 跳过id字段 和 时间戳字段
                 if ($item->Field === 'id' || in_array($item->Field, self::TIMESTAMP_FIELDS)) {
@@ -263,7 +270,7 @@ class MakeModel extends GeneratorCommand
             $stub = str_replace('CASTS', $this->arrayToString($casts), $stub);
             $stub = str_replace('RULES', $this->arrayToString($rules), $stub);
             $stub = str_replace('SCENARIOS', $this->scenariosToString($scenarios), $stub);
-
+            $stub = str_replace('SET_VALIDATOR_ATTRIBUTES', $this->arrayToString($setValidatorAttributes), $stub);
             // 添加软删除
             if (in_array('deleted_at', $fillable)) {
                 $stub = $this->addSoftDeletes($stub);
