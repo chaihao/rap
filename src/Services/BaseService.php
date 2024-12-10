@@ -51,7 +51,7 @@ abstract class BaseService
         $cacheKey = $this->generateCacheKey('list', $params);
 
         if ($this->getModel()->shouldCache()) {
-            return Cache::remember($cacheKey, $this->getModel()->getCacheTTL(), function () use ($params) {
+            return Cache::tags([$this->getModel()->getListCacheTag()])->remember($cacheKey, $this->getModel()->getCacheTTL(), function () use ($params) {
                 return $this->fetchListData($params);
             });
         }
@@ -248,9 +248,6 @@ abstract class BaseService
             // 创建记录
             $record = $this->getModel()->create($fillableData);
 
-            // 清除缓存
-            $this->clearModelCache();
-
             DB::commit();
             return $record;
         } catch (\Throwable $e) {
@@ -297,9 +294,6 @@ abstract class BaseService
 
             // 更新记录
             $record->update($fillableData);
-
-            // 清除缓存
-            $this->clearModelCache();
 
             DB::commit();
             return $record;
@@ -372,16 +366,6 @@ abstract class BaseService
             $data,
             array_flip($fillable)
         );
-    }
-
-    /**
-     * 清除模型相关的所有缓存
-     */
-    protected function clearModelCache(): void
-    {
-        if ($this->getModel()->shouldCache()) {
-            $this->getModel()->flushCache();
-        }
     }
 
     /**
@@ -626,9 +610,6 @@ abstract class BaseService
             $record->status = $status ?? !$record->status;
             $record->save();
 
-            // 清除缓存
-            $this->clearModelCache();
-
             DB::commit();
             return $this->message('状态更新成功');
         } catch (ApiException $e) {
@@ -651,6 +632,28 @@ abstract class BaseService
      */
     public function detail(int $id)
     {
+        $cacheKey = $this->generateCacheKey('detail', ['id' => $id]);
+        if ($this->getModel()->shouldCache()) {
+            return Cache::tags([$this->getModel()->getDetailCacheTag($id)])->remember($cacheKey, $this->getModel()->getCacheTTL(), function () use ($id) {
+                return $this->fetchDetailData($id);
+            });
+        }
+
+        return $this->fetchDetailData($id);
+    }
+
+
+
+
+    /**
+     * 获取详情数据
+     * 
+     * @param int $id 记录ID
+     * @return array
+     * @throws ApiException
+     */
+    public function fetchDetailData(int $id)
+    {
         try {
             // 验证ID
             $this->checkValidator(['id' => $id], 'get');
@@ -662,9 +665,6 @@ abstract class BaseService
 
             // 应用创建者范围
             $this->applyCreateByScope($query);
-
-            // 添加缓存支持
-            $this->applyCacheSupport($query);
 
             // 查找记录
             $info = $query->find($id);
@@ -682,6 +682,7 @@ abstract class BaseService
             throw new ApiException('获取记录失败', 400);
         }
     }
+
 
     /**
      * 格式化数据
@@ -711,25 +712,6 @@ abstract class BaseService
     }
 
 
-
-
-
-    /**
-     * 添加缓存支持   
-     * 
-     * @param \Illuminate\Database\Eloquent\Builder $query 查询构建器实例
-     * @param int $ttl 缓存时间（秒）
-     */
-    protected function applyCacheSupport($query, int $ttl = 3600): void
-    {
-        // 检测模型是否支持缓存
-        if (method_exists($this->getModel(), 'shouldCache')) {
-            // 如果支持缓存，则添加缓存
-            if ($this->getModel()->shouldCache()) {
-                $query->remember($ttl);
-            }
-        }
-    }
 
 
 

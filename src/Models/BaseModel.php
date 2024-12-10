@@ -92,6 +92,24 @@ abstract class BaseModel extends Model
         return $this->modelCache;
     }
 
+
+    public function flushCache(int $id)
+    {
+        if ($this->shouldCache()) {
+            Cache::tags([$this->getDetailCacheTag($id), $this->getListCacheTag()])->flush();
+        }
+    }
+
+    public function getDetailCacheTag(int $id)
+    {
+        return $this->getTable() . '_detail_' . $id;
+    }
+
+    public function getListCacheTag()
+    {
+        return $this->getTable() . '_list';
+    }
+
     /**
      * 获取缓存时间
      */
@@ -100,15 +118,6 @@ abstract class BaseModel extends Model
         return $this->cacheTTL;
     }
 
-    /**
-     * 清除指定缓存
-     */
-    public function clearCache(string $key): void
-    {
-        if ($this->shouldCache()) {
-            Cache::forget($this->getCacheKey($key));
-        }
-    }
 
     /**
      * 模型启动时注册事件监听
@@ -129,9 +138,9 @@ abstract class BaseModel extends Model
     {
         // 基类提供默认的缓存清理实现
         if ($this->shouldCache()) {
-            static::created(fn($model) => $model->clearCache('list'));
-            static::updated(fn($model) => $model->clearCache('list'));
-            static::deleted(fn($model) => $model->clearCache('list'));
+            static::created(fn($model) => $model->flushCache($model->id));
+            static::updated(fn($model) => $model->flushCache($model->id));
+            static::deleted(fn($model) => $model->flushCache($model->id));
         }
     }
 
