@@ -265,11 +265,15 @@ class MakeModel extends GeneratorCommand
                 $scenarios['status'] = ['id', 'status'];
             }
 
-            // 替换模板中的占位符
+            // 添加可填充字段
             $stub = str_replace('FILLABLE', '"' . implode('","', $fillable) . '"', $stub);
+            // 添加类型转换
             $stub = str_replace('CASTS', $this->arrayToString($casts), $stub);
+            // 添加验证规则
             $stub = str_replace('RULES', $this->arrayToString($rules), $stub);
+            // 添加场景
             $stub = str_replace('SCENARIOS', $this->scenariosToString($scenarios), $stub);
+            // 添加验证器自定义属性
             $stub = str_replace('SET_VALIDATOR_ATTRIBUTES', $this->arrayToString($setValidatorAttributes), $stub);
             // 添加软删除
             if (in_array('deleted_at', $fillable)) {
@@ -277,6 +281,7 @@ class MakeModel extends GeneratorCommand
             } else {
                 // 如果不存在 deleted_at 字段，移除相关的占位符
                 $stub = str_replace('USE_SOFT_DELETES_STATEMENT', '', $stub);
+                // 移除软删除trait
                 $stub = str_replace('USE_SOFT_DELETES', '', $stub);
             }
 
