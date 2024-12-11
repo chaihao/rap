@@ -22,17 +22,14 @@ class RequestResponseLogger
      */
     public function handle(Request $request, Closure $next)
     {
-        // 记录请求信息
-        $requestLog = $this->getRequestLog($request);
-
-        // 处理请求
+        // 先获取响应，避免在不需要记录日志时执行额外操作
         $response = $next($request);
-
-        // 记录响应信息
-        $responseLog = $this->getResponseLog($response);
 
         // 检查是否需要记录操作日志
         if ($this->shouldLogOperation($request)) {
+            // 记录请求和响应信息
+            $requestLog = $this->getRequestLog($request);
+            $responseLog = $this->getResponseLog($response);
             $this->logOperation($requestLog, $responseLog, $request);
         }
 
@@ -67,22 +64,26 @@ class RequestResponseLogger
     private function getResponseLog($response): array
     {
         try {
-            // 使用 Laravel 的响应对象方法判断
-            if ($response->headers->get('Content-Type') === 'application/json') {
+            $status = $response->status();
+            $contentType = $response->headers->get('Content-Type');
+
+            // 优化内容类型判断
+            if (str_contains($contentType, 'application/json')) {
+                $content = json_decode($response->getContent(), true);
                 return [
-                    'status' => $response->status(),
-                    'content' => json_decode($response->getContent(), true) ?? ['error' => '无效的 JSON 内容']
+                    'status' => $status,
+                    'content' => $content ?: ['error' => '无效的 JSON 内容']
                 ];
             }
 
             return [
-                'status' => $response->status(),
-                'content' => ['raw' => $response->getContent()]
+                'status' => $status,
+                'content' => ['raw' => mb_substr($response->getContent(), 0, 1000)] // 限制内容长度
             ];
         } catch (\Exception $e) {
             Log::error('响应日志解析失败：' . $e->getMessage());
             return [
-                'status' => $response->status(),
+                'status' => $response instanceof Response ? $response->getStatusCode() : 500,
                 'content' => ['error' => '无法解析的响应内容']
             ];
         }
@@ -184,19 +185,21 @@ class RequestResponseLogger
      */
     protected function getClientIP(): string
     {
-        $ip = request()->ip();
+        $request = request();
+        $ip = $request->ip();
 
-        if (!$ip || $ip === '::1' || $ip === '127.0.0.1') {
-            $ip = request()->header('X-Forwarded-For');
-            if (strpos($ip, ',') !== false) {
-                $ip = trim(explode(',', $ip)[0]);
+        if (!filter_var($ip, FILTER_VALIDATE_IP) || in_array($ip, ['::1', '127.0.0.1'])) {
+            foreach (['X-Forwarded-For', 'X-Real-IP'] as $header) {
+                $headerIp = $request->header($header);
+                if ($headerIp) {
+                    $ip = trim(explode(',', $headerIp)[0]);
+                    if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                        break;
+                    }
+                }
             }
         }
 
-        if (!$ip) {
-            $ip = request()->header('X-Real-IP');
-        }
-
-        return $ip ?: '0.0.0.0';
+        return filter_var($ip, FILTER_VALIDATE_IP) ? $ip : '0.0.0.0';
     }
 }

@@ -8,56 +8,72 @@ use Chaihao\Rap\Models\BaseModel;
 class OperationLog extends BaseModel
 {
 
-
-    /**
-     * 表名(不含前缀)
-     */
+    // 基础配置
     protected $table = 'operation_log';
-
-    /**
-     * 可批量赋值的属性
-     */
-    protected $fillable = ["created_by", "created_by_platform", "ip", "method", "name", "payload", "response", "url", "user_agent"];
-
-    /**
-     * 数据类型转换
-     */
+    protected $fillable = ["id", "method", "url", "ip", "user_agent", "payload", "response", "name", "created_by", "created_by_platform", "created_at", "updated_at"];
     protected $casts = [
-        "created_by" => "integer",
-        "created_by_platform" => "integer",
-        "ip" => "string",
         "method" => "string",
-        "name" => "string",
-        "payload" => "array",
-        "response" => "array",
         "url" => "string",
-        "user_agent" => "string"
-    ];
-
-    /**
-     * 验证规则
-     */
-    public $rules = [
-        "created_by" => "required|integer",
-        "created_by_platform" => "required|integer",
-        "ip" => "required|string|max:255",
-        "method" => "required|string|max:255",
-        "name" => "required|string|max:255",
+        "ip" => "string",
+        "user_agent" => "string",
         "payload" => "array",
         "response" => "array",
-        "url" => "required|string|max:255",
-        "user_agent" => "string"
+        "name" => "string",
+        "created_by" => "integer",
+        "created_by_platform" => "integer"
     ];
 
-    /**
-     * 场景验证规则
-     */
+    // 缓存配置
+    protected bool $modelCache = false;
+    protected int $cacheTTL = 3600;
+    protected string $cachePrefix = '';
+
+    // 验证配置
     public $scenarios = [
-        'add' => ['created_by', 'created_by_platform', 'ip', 'method', 'name', 'payload', 'response', 'url', 'user_agent'],
-        'edit' => ['id', 'created_by', 'created_by_platform', 'ip', 'method', 'name', 'payload', 'response', 'url', 'user_agent'],
+        'add' => ['method', 'url', 'ip', 'user_agent', 'payload', 'response', 'name', 'created_by', 'created_by_platform'],
+        'edit' => ['id', 'method', 'url', 'ip', 'user_agent', 'payload', 'response', 'name', 'created_by', 'created_by_platform'],
         'delete' => ['id'],
         'detail' => ['id']
     ];
+    public $rules = [
+        "method" => "string|max:255",
+        "url" => "string|max:255",
+        "ip" => "string|max:255",
+        "user_agent" => "string",
+        "payload" => "array",
+        "response" => "array",
+        "name" => "string|max:255",
+        "created_by" => "integer",
+        "created_by_platform" => "integer"
+    ];
+
+    /**
+     * 获取验证器错误信息
+     */
+    public function setValidatorMessage(): array
+    {
+        return [
+            "id.required" => "ID不能为空",
+        ];
+    }
+
+    /**
+     * 获取验证器自定义属性
+     */
+    public function setValidatorAttributes(): array
+    {
+        return [
+            "method" => "请求方法",
+            "url" => "请求地址",
+            "ip" => "请求IP",
+            "user_agent" => "用户代理",
+            "payload" => "请求参数",
+            "response" => "响应参数",
+            "name" => "操作名称",
+            "created_by" => "创建人ID",
+            "created_by_platform" => "创建人类型 1 总管理平台员工 3 用户"
+        ];
+    }
 
     /**
      * 自定义列表展示字段
@@ -83,9 +99,6 @@ class OperationLog extends BaseModel
     public function formatOutput(array $data): array
     {
         $data = parent::formatOutput($data);
-
-        // 在此添加自定义格式化逻辑
-
         return $data;
     }
 }

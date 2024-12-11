@@ -5,6 +5,7 @@ namespace Chaihao\Rap\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 abstract class BaseModel extends Model
@@ -42,6 +43,12 @@ abstract class BaseModel extends Model
     // 状态常量
     const STATUS_INACTIVE = 0;
     const STATUS_ACTIVE = 1;
+
+    /**
+     * 关联模型配置
+     * 子类可以重写此属性来定义需要同步清理缓存的关联关系
+     */
+    protected array $cacheRelations = [];
 
     /**
      * 初始化模型
@@ -92,12 +99,63 @@ abstract class BaseModel extends Model
         return $this->modelCache;
     }
 
+    /**
+     * 获取所有相关的缓存标签
+     */
+    protected function getAllCacheTags(int $id): array
+    {
+        $tags = [
+            $this->getDetailCacheTag($id),
+            $this->getListCacheTag()
+        ];
 
+        // 添加自定义查询标签
+        $tags[] = $this->getTable() . '_query';
+
+        return $tags;
+    }
+
+    /**
+     * 优化后的缓存清理方法
+     */
     public function flushCache(int $id)
     {
         if ($this->shouldCache()) {
-            Cache::tags([$this->getDetailCacheTag($id), $this->getListCacheTag()])->flush();
+            try {
+                $tags = $this->getAllCacheTags($id);
+                Log::info("清理缓存: {$this->getTable()} - ID: {$id}, Tags: " . implode(', ', $tags));
+
+                Cache::tags($tags)->flush();
+
+                // 触发缓存清理事件（如果需要）
+                event('model.cache.flushed', [
+                    'model' => $this,
+                    'id' => $id,
+                    'tags' => $tags
+                ]);
+            } catch (\Exception $e) {
+                Log::error("缓存清理失败: {$this->getTable()} - ID: {$id}", [
+                    'error' => $e->getMessage()
+                ]);
+            }
         }
+    }
+
+    /**
+     * 缓存数据时使用的标签
+     */
+    public function getCacheTags($id = null): array
+    {
+        $tags = [$this->getListCacheTag()];
+
+        if ($id) {
+            $tags[] = $this->getDetailCacheTag($id);
+        }
+
+        // 添加查询标签
+        $tags[] = $this->getTable() . '_query';
+
+        return $tags;
     }
 
     public function getDetailCacheTag(int $id)
@@ -132,15 +190,59 @@ abstract class BaseModel extends Model
 
     /**
      * 注册缓存事件处理
-     * 子类可以重写此方法来实现自定义的缓存清理逻辑
      */
     protected function registerCacheEvents(): void
     {
         // 基类提供默认的缓存清理实现
         if ($this->shouldCache()) {
+            // 模型本身的缓存清理
             static::created(fn($model) => $model->flushCache($model->id));
             static::updated(fn($model) => $model->flushCache($model->id));
             static::deleted(fn($model) => $model->flushCache($model->id));
+
+            // 关联模型的缓存清理
+            foreach ($this->cacheRelations as $relation => $callback) {
+                static::created(function ($model) use ($relation, $callback) {
+                    $this->flushRelationCache($model, $relation, $callback);
+                });
+                static::updated(function ($model) use ($relation, $callback) {
+                    $this->flushRelationCache($model, $relation, $callback);
+                });
+                static::deleted(function ($model) use ($relation, $callback) {
+                    $this->flushRelationCache($model, $relation, $callback);
+                });
+            }
+        }
+    }
+
+    /**
+     * 清理关联模型缓存
+     */
+    protected function flushRelationCache($model, string $relation, $callback): void
+    {
+        if (method_exists($model, $relation)) {
+            $relatedModel = $model->$relation;
+            if ($relatedModel) {
+                // 如果是集合，则遍历处理
+                if ($relatedModel instanceof \Illuminate\Database\Eloquent\Collection) {
+                    foreach ($relatedModel as $related) {
+                        if (is_callable($callback)) {
+                            $id = $callback($related);
+                        } else {
+                            $id = $related->id;
+                        }
+                        $related->flushCache($id);
+                    }
+                } else {
+                    // 单个模型的处理
+                    if (is_callable($callback)) {
+                        $id = $callback($relatedModel);
+                    } else {
+                        $id = $relatedModel->id;
+                    }
+                    $relatedModel->flushCache($id);
+                }
+            }
         }
     }
 
@@ -257,4 +359,52 @@ abstract class BaseModel extends Model
         }
         return $scenarioRules;
     }
+
+
+
+    // 使用示例 -- 暂未验证
+
+    // class User extends BaseModel 
+    // {
+    //     /**
+    //      * 查询数据时使用缓存
+    //      */
+    //     public function scopeCached($query)
+    //     {
+    //         if ($this->shouldCache()) {
+    //             $key = $this->getCacheKey('query_' . md5($query->toSql() . json_encode($query->getBindings())));
+    //             return Cache::tags($this->getCacheTags())
+    //                 ->remember($key, $this->getCacheTTL(), function() use ($query) {
+    //                     return $query->get();
+    //                 });
+    //         }
+    //         return $query->get();
+    //     }
+
+    //     /**
+    //      * 获取详情时使用缓存
+    //      */
+    //     public static function findCached($id)
+    //     {
+    //         $instance = new static;
+    //         if ($instance->shouldCache()) {
+    //             $key = $instance->getCacheKey('detail_' . $id);
+    //             return Cache::tags($instance->getCacheTags($id))
+    //                 ->remember($key, $instance->getCacheTTL(), function() use ($id) {
+    //                     return static::find($id);
+    //                 });
+    //         }
+    //         return static::find($id);
+    //     }
+    // }
+
+    // // 使用缓存查询
+    // $users = User::where('status', 1)->cached();
+
+    // // 使用缓存获取详情
+    // $user = User::findCached(1);
+
+
+
+
 }

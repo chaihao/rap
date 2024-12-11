@@ -1,5 +1,6 @@
 <?php
 
+use Chaihao\Rap\Http\Controllers\OperationLogController;
 use Illuminate\Support\Facades\Route;
 use Chaihao\Rap\Http\Controllers\StaffController;
 use Chaihao\Rap\Http\Controllers\PermissionController;
@@ -44,6 +45,12 @@ Route::prefix($prefix)->group(function () {
             Route::post('revoke_permission_to',  'revokePermissionTo')->name('撤销用户的指定权限');
             Route::post('sync_permissions',  'syncPermissions')->name('同步用户权限');
             Route::post('give_permission_to',  'givePermissionTo')->name('给用户直接分配权限');
+        });
+
+        // 日志
+        Route::prefix('log')->controller(OperationLogController::class)->name('日志管理.')->group(function () {
+            Route::post('list',  'list')->name('列表');
+            Route::post('detail',  'detail')->name('详情');
         });
     });
 });
