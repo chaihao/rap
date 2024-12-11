@@ -2,7 +2,7 @@
 
 namespace Chaihao\Rap\Http\Controllers;
 
-use App\Services\Sys\OperationLogService;
+use Chaihao\Rap\Services\Sys\OperationLogService;
 use Chaihao\Rap\Http\Controllers\BaseController;
 use Chaihao\Rap\Models\Sys\OperationLog;
 use Illuminate\Http\JsonResponse;
