@@ -51,7 +51,7 @@ abstract class BaseService
         $cacheKey = $this->generateCacheKey('list', $params);
 
         if ($this->getModel()->shouldCache()) {
-            return Cache::tags([$this->getModel()->getListCacheTag()])->remember($cacheKey, $this->getModel()->getCacheTTL(), function () use ($params) {
+            return Cache::tags($this->getModel()->getCacheTags())->remember($cacheKey, $this->getModel()->getCacheTTL(), function () use ($params) {
                 return $this->fetchListData($params);
             });
         }
@@ -281,17 +281,17 @@ abstract class BaseService
             if (!$record) {
                 throw new ApiException('记录不存在');
             }
-
             // 编辑前的数据处理
             $data = $this->beforeEdit($data);
 
             // 格式化数据
             $data = $this->getModel()->formatAttributes($data);
+
             // 过滤可填充数据
             $fillableData = $this->filterFillableData($data);
+
             // 添加更新者ID
             $this->addUpdaterId($fillableData);
-
             // 更新记录
             $record->update($fillableData);
 
@@ -634,7 +634,7 @@ abstract class BaseService
     {
         $cacheKey = $this->generateCacheKey('detail', ['id' => $id]);
         if ($this->getModel()->shouldCache()) {
-            return Cache::tags([$this->getModel()->getDetailCacheTag($id)])->remember($cacheKey, $this->getModel()->getCacheTTL(), function () use ($id) {
+            return Cache::tags($this->getModel()->getCacheTags($id))->remember($cacheKey, $this->getModel()->getCacheTTL(), function () use ($id) {
                 return $this->fetchDetailData($id);
             });
         }

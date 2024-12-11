@@ -47,8 +47,22 @@ abstract class BaseModel extends Model
     /**
      * 关联模型配置
      * 子类可以重写此属性来定义需要同步清理缓存的关联关系
+     * 
+     * 使用示例
+     * protected function cacheRelations(): array
+     * {
+     *     return [
+     *   // 关联模型名称 => 关联模型ID
+     *         'classify' => function ($related) {
+     *             return $related->classify_id;
+     *         },
+     *     ];
+     * }
      */
-    protected array $cacheRelations = [];
+    protected function cacheRelations(): array
+    {
+        return [];
+    }
 
     /**
      * 初始化模型
@@ -201,7 +215,7 @@ abstract class BaseModel extends Model
             static::deleted(fn($model) => $model->flushCache($model->id));
 
             // 关联模型的缓存清理
-            foreach ($this->cacheRelations as $relation => $callback) {
+            foreach ($this->cacheRelations() as $relation => $callback) {
                 static::created(function ($model) use ($relation, $callback) {
                     $this->flushRelationCache($model, $relation, $callback);
                 });

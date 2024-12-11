@@ -68,9 +68,8 @@ abstract class BaseController extends Controller
     public function edit(int|null $id = null): JsonResponse
     {
         try {
-            if (empty($id)) {
-                $params = $this->request->all();
-            } else {
+            $params = $this->request->all();
+            if (!empty($id)) {
                 $params['id'] = $id;
             }
             // 验证数据
@@ -89,9 +88,9 @@ abstract class BaseController extends Controller
     public function delete(int|null $id = null): JsonResponse
     {
         try {
-            if (empty($id)) {
-                $params = $this->request->all();
-            } else {
+
+            $params = $this->request->all();
+            if (!empty($id)) {
                 $params['id'] = $id;
             }
 
@@ -111,9 +110,8 @@ abstract class BaseController extends Controller
     public function detail(int|null $id = null): JsonResponse
     {
         try {
-            if (empty($id)) {
-                $params = $this->request->all();
-            } else {
+            $params = $this->request->all();
+            if (!empty($id)) {
                 $params['id'] = $id;
             }
             // 验证ID

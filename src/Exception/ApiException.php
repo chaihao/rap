@@ -5,6 +5,7 @@ namespace Chaihao\Rap\Exception;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Throwable;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Illuminate\Http\Client\ConnectionException;
@@ -186,6 +187,12 @@ class ApiException extends Exception
             $e instanceof ConnectionException
         ) {
             return self::redisConnectionError($e->getMessage());
+        }
+
+        // 检测 HTTP 请求方法
+        if ($e instanceof MethodNotAllowedHttpException) {
+            $allowedMethods = $e->getHeaders()['Allow'] ?? '无';
+            return new static(sprintf('不支持的请求方法，支持的方法：%s', $allowedMethods), self::SERVER_ERROR);
         }
 
         // 处理 HTTP 异常
