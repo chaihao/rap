@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Providers;
+namespace Chaihao\Rap\Providers;
 
 use Illuminate\Support\ServiceProvider;
 
