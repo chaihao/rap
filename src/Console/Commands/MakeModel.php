@@ -63,6 +63,7 @@ class MakeModel extends GeneratorCommand
         $tableName = $this->option('table') ?: $this->getTableName();
         // 获取过滤后的字段列表（不包含时间戳字段）
         $list = $tableName ? $this->organizeData($tableName) : [];
+
         // // 获取所有字段，包括时间戳字段
         // $allFields = $tableName ? $this->getAllFields($tableName) : [];
 
@@ -342,10 +343,23 @@ class MakeModel extends GeneratorCommand
             $rules = array_merge($rules, $specialRules);
         }
 
-        // 根据字段类型设置对应的验证规则和类型转换
-        $typeRules = $this->getTypeBasedRules($baseType, $length, $decimals);
-        $rules = array_merge($rules, $typeRules['rules']);
-        $casts = $typeRules['cast'];
+        // 枚举类型特殊处理
+        if ($baseType === 'enum') {
+            // 修改正则表达式以正确匹配枚举值
+            preg_match("/enum\((.*?)\)/i", $item->Type, $matches);
+
+            if (!empty($matches[1])) {
+                // 去除引号并分割枚举值
+                $enumValues = explode(',', str_replace("'", '', $matches[1]));
+                $rules[] = 'in:' . implode(',', $enumValues);
+                $casts = 'string';
+            }
+        } else {
+            // 根据字段类型设置对应的验证规则和类型转换
+            $typeRules = $this->getTypeBasedRules($baseType, $length, $decimals);
+            $rules = array_merge($rules, $typeRules['rules']);
+            $casts = $typeRules['cast'];
+        }
 
         // 添加唯一字段验证规则
         if ($item->Key === 'UNI') {
@@ -391,7 +405,8 @@ class MakeModel extends GeneratorCommand
             'numeric' => ['decimal', 'float', 'double'],      // 数值类型
             'string' => ['char', 'varchar', 'text', 'mediumtext', 'longtext'],  // 字符串类型
             'datetime' => ['timestamp', 'datetime'],          // 日期时间类型
-            'array' => ['json']                              // JSON类型
+            'array' => ['json'],                             // JSON类型
+            'enum' => ['enum']                               // 枚举类型
         ];
 
         // 根据字段类型设置相应的验证规则
@@ -409,7 +424,6 @@ class MakeModel extends GeneratorCommand
                 if ($castType === 'numeric' && $length && $decimals) {
                     $rules[] = "regex:/^\d{1,{$length}}(\.\d{1,{$decimals}})?$/";
                 }
-
                 break;
             }
         }
@@ -419,7 +433,6 @@ class MakeModel extends GeneratorCommand
             'cast' => $cast
         ];
     }
-
 
     /**
      * 获取特殊字段的验证规则
@@ -439,7 +452,10 @@ class MakeModel extends GeneratorCommand
 
         // 使用模糊匹配检查字段名是否包含特殊关键词
         foreach ($specialRules as $key => $rules) {
-            if (stripos($fieldName, $key) !== false) {
+            // if (stripos($fieldName, $key) !== false) {
+            //     return $rules;
+            // }
+            if ($fieldName == $key) {
                 return $rules;
             }
         }
