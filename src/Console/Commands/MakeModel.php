@@ -332,6 +332,14 @@ class MakeModel extends GeneratorCommand
         // 添加必填规则 - 只有当字段不允许为空且没有默认值时才添加
         if ($item->Null === 'NO' && !isset($item->Default)) {
             $rules[] = 'required';
+        } else {
+            $rules[] = 'nullable';
+        }
+
+        // 根据字段名称添加特殊规则
+        $specialRules = $this->getSpecialFieldRules($item->Field);
+        if ($specialRules) {
+            $rules = array_merge($rules, $specialRules);
         }
 
         // 根据字段类型设置对应的验证规则和类型转换
@@ -342,7 +350,13 @@ class MakeModel extends GeneratorCommand
         // 添加唯一字段验证规则
         if ($item->Key === 'UNI') {
             $tableName = ltrim($tableName, env('DB_PREFIX', ''));
-            $rules[] = "unique:{$tableName},{$item->Field}";
+            // 检查是否存在软删除字段
+            $hasSoftDelete = collect($this->getAllFields($tableName))->contains('deleted_at');
+            $uniqueRule = "unique:{$tableName},{$item->Field},NULL,id";
+            if ($hasSoftDelete) {
+                $uniqueRule .= ",deleted_at,NULL";
+            }
+            $rules[] = $uniqueRule;
         }
 
         return [implode('|', array_filter($rules)), $casts];
@@ -404,6 +418,33 @@ class MakeModel extends GeneratorCommand
             'rules' => $rules,
             'cast' => $cast
         ];
+    }
+
+
+    /**
+     * 获取特殊字段的验证规则
+     */
+    private function getSpecialFieldRules($fieldName)
+    {
+        $specialRules = [
+            'email' => ['email'],
+            'url' => ['url'],
+            'ip' => ['ip'],
+            'phone' => ['regex:/^1[3-9]\d{9}$/'],
+            'password' => ['min:6'],
+            'age' => ['integer', 'min:0', 'max:150'],
+            'amount' => ['numeric', 'min:0'],
+            'sort' => ['integer', 'min:0'],
+        ];
+
+        // 使用模糊匹配检查字段名是否包含特殊关键词
+        foreach ($specialRules as $key => $rules) {
+            if (stripos($fieldName, $key) !== false) {
+                return $rules;
+            }
+        }
+
+        return [];
     }
 
     /**
