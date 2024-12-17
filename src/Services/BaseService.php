@@ -163,11 +163,40 @@ abstract class BaseService
                 continue;
             }
 
+            // json字段查询 (使用与json数组, json 对象不适用) 
+            if (in_array($field, $this->jsonFilter())) {
+                $this->applyJsonFilter($query, $field, $value);
+                continue;
+            }
+
             // 处理普通条件
             $query->where($field, $value);
         }
     }
+    /**
+     * 获取需要 JSON 过滤的字段
+     * 
+     * @return array
+     */
+    protected function jsonFilter(): array
+    {
+        // 检测 $casts 中是否包含 json
+        $casts = $this->getModel()->getCasts();
+        // 获取所有被转换为 array 类型的字段名
+        return array_keys($casts, 'array');
+    }
 
+    /**
+     * 应用 JSON 过滤条件
+     * 
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param string $field
+     * @param mixed $value
+     */
+    protected function applyJsonFilter($query, string $field, $value): void
+    {
+        $query->whereJsonContains($field, $value);
+    }
     /**
      * 应用模糊查询
      */
@@ -632,6 +661,11 @@ abstract class BaseService
      */
     public function detail(int $id)
     {
+        // 完全禁用有关联查询时的缓存
+        if ($this->hasRelations()) {
+            return $this->fetchDetailData($id);
+        }
+
         $cacheKey = $this->generateCacheKey('detail', ['id' => $id]);
         if ($this->getModel()->shouldCache()) {
             return Cache::tags($this->getModel()->getCacheTags($id))->remember($cacheKey, $this->getModel()->getCacheTTL(), function () use ($id) {
@@ -641,7 +675,6 @@ abstract class BaseService
 
         return $this->fetchDetailData($id);
     }
-
 
 
 
@@ -1145,5 +1178,16 @@ abstract class BaseService
             'last_page' => $data->lastPage(),
             'per_page' => $data->perPage(),
         ];
+    }
+
+    /**
+     * 检查是否有关联查询
+     * 
+     * @return bool
+     */
+    protected function hasRelations(): bool
+    {
+        return method_exists($this->getModel(), 'getWithRelations') && 
+               !empty($this->getModel()->getWithRelations());
     }
 }
