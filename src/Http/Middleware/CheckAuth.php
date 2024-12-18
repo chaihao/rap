@@ -46,7 +46,7 @@ class CheckAuth
             }
 
             // 验证用户类型
-            $staffClass = config('rap.auth.staff.model', \Chaihao\Rap\Models\Auth\Staff::class);
+            $staffClass = config('rap.models.staff.class', \Chaihao\Rap\Models\Auth\Staff::class);
             if (!($staff instanceof $staffClass)) {
                 return $this->unauthorizedResponse('无效的用户类型');
             }

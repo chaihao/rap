@@ -11,7 +11,7 @@ class CurrentStaffService extends BaseService
 
    public function setStaff($staff): void
    {
-      $staffClass = config('rap.auth.staff.model', Staff::class);
+      $staffClass = config('rap.models.staff.class', Staff::class);
       if ($staff === null || $staff instanceof $staffClass) {
          $this->staff = $staff;
          return;

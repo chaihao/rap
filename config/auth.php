@@ -11,7 +11,7 @@ return [
     'providers' => [
         config('rap.api.guard', 'api') => [
             'driver' => 'eloquent',
-            'model' => config('rap.auth.staff.model', \Chaihao\Rap\Models\Auth\Staff::class),
+            'model' => config('rap.models.staff.class', \Chaihao\Rap\Models\Auth\Staff::class),
         ],
     ],
 

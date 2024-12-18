@@ -20,7 +20,7 @@ class PermissionService extends BaseService
 
    public function __construct()
    {
-      $this->model = app(config('rap.auth.staff.model'));
+      $this->model = app(config('rap.models.staff.class'));
    }
 
    /**

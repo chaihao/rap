@@ -10,7 +10,7 @@ $prefix = config('rap.api.prefix', '');
 Route::prefix($prefix)->group(function () {
 
 
-    if (config('rap.auth.staff.model') == \Chaihao\Rap\Models\Auth\Staff::class) {
+    if (config('rap.models.staff.class') == \Chaihao\Rap\Models\Auth\Staff::class) {
         // 不需要验证的路由
         Route::withoutMiddleware(['permission', 'check.auth'])->name('员工管理.')->group(function () {
             Route::post('auth/login', [StaffController::class, 'login'])->name('登录账号');
@@ -19,7 +19,7 @@ Route::prefix($prefix)->group(function () {
     }
     // 需要验证的路由使用 rap-api 中间件组
     Route::middleware(['rap-api', 'permission'])->group(function () {
-        if (config('rap.auth.staff.model') == \Chaihao\Rap\Models\Auth\Staff::class) {
+        if (config('rap.models.staff.class') == \Chaihao\Rap\Models\Auth\Staff::class) {
             // 员工
             Route::prefix('auth')->controller(StaffController::class)->name('员工管理.')->group(function () {
                 Route::post('staff_info', 'staffInfo')->name('获取员工信息');
