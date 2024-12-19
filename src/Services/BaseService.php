@@ -48,8 +48,12 @@ abstract class BaseService
      */
     public function getList(array $params = []): array
     {
-        $cacheKey = $this->generateCacheKey('list', $params);
+        // 如果有关联查询,则直接返回关联查询结果
+        if ($this->hasListRelations()) {
+            return $this->fetchListData($params);
+        }
 
+        $cacheKey = $this->generateCacheKey('list', $params);
         if ($this->getModel()->shouldCache()) {
             return Cache::tags($this->getModel()->getCacheTags())->remember($cacheKey, $this->getModel()->getCacheTTL(), function () use ($params) {
                 return $this->fetchListData($params);
@@ -59,6 +63,16 @@ abstract class BaseService
         return $this->fetchListData($params);
     }
 
+    /**
+     * 检查是否有关联查询
+     * 
+     * @return bool
+     */
+    protected function hasListRelations(): bool
+    {
+        return method_exists($this->getModel(), 'listWithRelations') &&
+            !empty($this->getModel()->listWithRelations());
+    }
     /**
      * 获取列表数据
      * 
@@ -662,7 +676,7 @@ abstract class BaseService
     public function detail(int $id)
     {
         // 完全禁用有关联查询时的缓存
-        if ($this->hasRelations()) {
+        if ($this->hasGetRelations()) {
             return $this->fetchDetailData($id);
         }
 
@@ -676,6 +690,16 @@ abstract class BaseService
         return $this->fetchDetailData($id);
     }
 
+    /**
+     * 检查是否有关联查询
+     * 
+     * @return bool
+     */
+    protected function hasGetRelations(): bool
+    {
+        return method_exists($this->getModel(), 'getWithRelations') &&
+            !empty($this->getModel()->getWithRelations());
+    }
 
 
     /**
@@ -1178,16 +1202,5 @@ abstract class BaseService
             'last_page' => $data->lastPage(),
             'per_page' => $data->perPage(),
         ];
-    }
-
-    /**
-     * 检查是否有关联查询
-     * 
-     * @return bool
-     */
-    protected function hasRelations(): bool
-    {
-        return method_exists($this->getModel(), 'getWithRelations') && 
-               !empty($this->getModel()->getWithRelations());
     }
 }

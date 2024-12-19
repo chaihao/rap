@@ -214,18 +214,18 @@ abstract class BaseModel extends Model
             static::updated(fn($model) => $model->flushCache($model->id));
             static::deleted(fn($model) => $model->flushCache($model->id));
 
-            // 关联模型的缓存清理
-            foreach ($this->cacheRelations() as $relation => $callback) {
-                static::created(function ($model) use ($relation, $callback) {
-                    $this->flushRelationCache($model, $relation, $callback);
-                });
-                static::updated(function ($model) use ($relation, $callback) {
-                    $this->flushRelationCache($model, $relation, $callback);
-                });
-                static::deleted(function ($model) use ($relation, $callback) {
-                    $this->flushRelationCache($model, $relation, $callback);
-                });
-            }
+            // // 关联模型的缓存清理
+            // foreach ($this->cacheRelations() as $relation => $callback) {
+            //     static::created(function ($model) use ($relation, $callback) {
+            //         $this->flushRelationCache($model, $relation, $callback);
+            //     });
+            //     static::updated(function ($model) use ($relation, $callback) {
+            //         $this->flushRelationCache($model, $relation, $callback);
+            //     });
+            //     static::deleted(function ($model) use ($relation, $callback) {
+            //         $this->flushRelationCache($model, $relation, $callback);
+            //     });
+            // }
         }
     }
 
