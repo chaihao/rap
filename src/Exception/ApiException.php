@@ -3,12 +3,14 @@
 namespace Chaihao\Rap\Exception;
 
 use Exception;
-use Illuminate\Http\JsonResponse;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
+use RedisException;
 use Throwable;
-use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Client\ConnectionException;
+use Predis\Connection\ConnectionException as PredisConnectionException;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 
 /**
  * @method static static from(\Throwable $e)
@@ -182,8 +184,8 @@ class ApiException extends Exception
 
         // 检测 Redis 连接异常
         if (
-            $e instanceof \RedisException ||
-            $e instanceof \Predis\Connection\ConnectionException ||
+            $e instanceof RedisException ||
+            $e instanceof PredisConnectionException ||
             $e instanceof ConnectionException
         ) {
             return self::redisConnectionError($e->getMessage());

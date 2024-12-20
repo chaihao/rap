@@ -1044,15 +1044,15 @@ abstract class BaseService
     /**
      * 获取单条记录
      * @param array $params 查询参数
-     * @return array
+     * @return \Illuminate\Database\Eloquent\Model
      */
-    public function getOne(array $params = [])
+    public function getOne($params, string $errorMessage = '记录不存在')
     {
         $data = $this->getModel()->where($params)->first();
         if (!$data) {
-            throw new ApiException('记录不存在');
+            throw new ApiException($errorMessage);
         }
-        return $data;
+        return $data;  // 返回的是模型实例(对象)
     }
 
 
