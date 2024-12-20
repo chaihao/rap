@@ -2,6 +2,7 @@
 
 namespace Chaihao\Rap\Foundation;
 
+use Chaihao\Rap\Console\Commands\AddAddress;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Foundation\Application;
 use Chaihao\Rap\Console\Commands\MakeModel;
@@ -29,6 +30,7 @@ class Kernel
         MakeController::class,
         MakeServices::class,
         MakeRepositories::class,
+        AddAddress::class,
     ];
 
     /**

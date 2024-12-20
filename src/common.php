@@ -1,164 +1,153 @@
 <?php
 
+namespace Chaihao\Rap;
+
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Log;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use DateTime;
+use DateInterval;
+use Exception;
 
-// 检测日期
+/**
+ * 格式化日期范围
+ * @param array $date 包含开始和结束日期的数组
+ * @return array 格式化后的日期时间或错误信息
+ */
 if (!function_exists('dateFormat')) {
-    function dateFormat(array $date)
+    function dateFormat(array $date): array
     {
         try {
-            $start = Carbon::parse(reset($date))->timezone('PRC');
-            $end = Carbon::parse(end($date))->timezone('PRC');
+            [$startDate, $endDate] = [reset($date), end($date)];
 
-            if ($start->toTimeString() == '00:00:00') {
-                $start = $start->startOfDay();
-            }
+            $start = Carbon::parse($startDate)->timezone('PRC');
+            $end = Carbon::parse($endDate)->timezone('PRC');
 
-            if ($end->toTimeString() == '00:00:00') {
-                $end = $end->endOfDay();
-            }
+            // 优化日期处理逻辑
+            $start = $start->format('H:i:s') === '00:00:00' ? $start->startOfDay() : $start;
+            $end = $end->format('H:i:s') === '00:00:00' ? $end->endOfDay() : $end;
 
             return [$start->toDateTimeString(), $end->toDateTimeString()];
         } catch (Exception $e) {
-            return [
-                'status' => false,
-                'msg' => $e->getMessage(),
-            ];
+            Log::error('日期格式化错误: ' . $e->getMessage());
+            return ['status' => false, 'msg' => '日期格式无效'];
         }
     }
 }
 
-
-if (!function_exists('getClientIp')) {
-    /**
-     * 获取客户端IP地址
-     *
-     * @return string
-     */
+/**
+ * 获取客户端真实IP地址
+ */
+if (!function_exists('getClientIP')) {
     function getClientIP(): string
     {
-        $ip = request()->ip();
+        $request = request();
+        $ip = $request->ip();
 
-        if (!$ip || $ip === '::1' || $ip === '127.0.0.1') {
-            $ip = request()->header('X-Forwarded-For');
-            if (strpos($ip, ',') !== false) {
-                $ip = trim(explode(',', $ip)[0]);
+        // 本地环境IP处理
+        if (!$ip || in_array($ip, ['::1', '127.0.0.1'], true)) {
+            $forwardedIp = $request->header('X-Forwarded-For');
+            if ($forwardedIp) {
+                $ipArray = array_map('trim', explode(',', $forwardedIp));
+                $ip = $ipArray[0];
             }
         }
 
-        if (!$ip) {
-            $ip = request()->header('X-Real-IP');
-        }
-
-        return $ip ?: '0.0.0.0';
+        return $ip ?: $request->header('X-Real-IP', '0.0.0.0');
     }
 }
 
-
-
 /**
- * 获取日期段间隔的所有日期
+ * 获取日期范围内的所有日期
  */
 if (!function_exists('dateRange')) {
-    function dateRange(array $date, string $type = 'day')
+    function dateRange(array $date, string $type = 'day'): array|Response
     {
-        $startDate = reset($date);
-        $endDate = end($date);
+        [$startDate, $endDate] = [$date[0], end($date)];
+
         if (!validateData($startDate) || !validateData($endDate)) {
             return Response::make()->failed('日期格式输入有误');
         }
+
         if (strtotime($startDate) > strtotime($endDate)) {
             return Response::make()->failed('开始时间必须小于或等于结束时间');
         }
-        $dateRange = [];
-        $startDate = new DateTime($startDate);
-        $endDate = new DateTime($endDate);
 
-        while ($startDate <= $endDate) {
-            if ($type == 'month') {
-                $dateRange[] = $startDate->format('Y-m');
-                $startDate->modify('+1 month');
-            } else {
-                $dateRange[] = $startDate->format('Y-m-d');
-                $startDate->modify('+1 day');
-            }
+        $dateRange = [];
+        $current = new DateTime($startDate);
+        $end = new DateTime($endDate);
+        $interval = new DateInterval($type === 'month' ? 'P1M' : 'P1D');
+        $format = $type === 'month' ? 'Y-m' : 'Y-m-d';
+
+        while ($current <= $end) {
+            $dateRange[] = $current->format($format);
+            $current->add($interval);
         }
+
         return $dateRange;
     }
 }
 
-
-
-
-/* *
+/**
  * 一些日期的计算
- * */
+ */
 if (!function_exists('dateAnalysis')) {
     function dateAnalysis($tab)
     {
-        $today    =   date("Y-m-d");
-        $begin_time = $end_time = $today;
-        switch ($tab) {
-            case 1:
-                $begin_time = $today; //今天
-                $end_time   = $today; //今天
-                break;
-            case 2:
-                $begin_time = date('Y-m-d', strtotime('-1 day')); //昨天
-                $end_time   = date('Y-m-d', strtotime('-1 day')); //昨天
-                break;
-            case 3: //本周
-                $w              =   date('w', strtotime($today));
-                //$first =1 表示每周星期一为开始日期 0表示每周日为开始日期
-                $first  =   1;
-                $week_start =   date('Y-m-d', strtotime("$today -" . ($w ? $w - $first : 6) . ' days'));
+        $today = Carbon::today();
+        $begin_time = $end_time = $today->format('Y-m-d');
 
-                $begin_time =   $week_start; //本周
-                $end_time   =   date('Y-m-d');
-                break;
-            case 4: //上周
-                $w              =   date('w', strtotime($today));
-                //$first =1 表示每周星期一为开始日期 0表示每周日为开始日期
-                $first  =   1;
-                $week_start =   date('Y-m-d', strtotime("$today -" . ($w ? $w - $first : 6) . ' days'));
+        try {
+            switch ($tab) {
+                case 1: // 今天
+                    break;
 
-                $begin_time =   date('Y-m-d', strtotime($week_start)); //上周
-                $end_time   =   $week_start;
-                break;
-            case 5: //本月
-                $begin_time =   date("Y-m-01"); //本月
-                $end_time   =   $today;
-                break;
-            case 6: //上个月
-                $begin_time =   date("Y-m-01", strtotime('-1 month')); //上个月
-                $end_time   =   $today;
-                break;
-            default:
-                if ($tab) {
-                    //筛选指定日期
-                    if (!validateData($tab)) {
+                case 2: // 昨天
+                    $begin_time = $end_time = $today->copy()->subDay()->format('Y-m-d');
+                    break;
+
+                case 3: // 本周
+                    $begin_time = $today->copy()->startOfWeek()->format('Y-m-d');
+                    break;
+
+                case 4: // 上周
+                    $lastWeek = $today->copy()->subWeek();
+                    $begin_time = $lastWeek->startOfWeek()->format('Y-m-d');
+                    $end_time = $lastWeek->endOfWeek()->format('Y-m-d');
+                    break;
+
+                case 5: // 本月
+                    $begin_time = $today->copy()->startOfMonth()->format('Y-m-d');
+                    break;
+
+                case 6: // 上月
+                    $begin_time = $today->copy()->subMonth()->startOfMonth()->format('Y-m-d');
+                    $end_time = $today->copy()->subMonth()->endOfMonth()->format('Y-m-d');
+                    break;
+
+                default:
+                    if ($tab && !validateData($tab)) {
                         return Response::make()->failed('日期格式输入有误');
                     }
-                    $begin_time = $tab;
-                    $end_time   = $tab;
-                }
-        }
+                    $begin_time = $end_time = $tab ?: $begin_time;
+            }
 
-        return [
-            'begin_time'  => $begin_time,
-            'end_time'    => $end_time
-        ];
+            return [
+                'begin_time' => $begin_time,
+                'end_time' => $end_time
+            ];
+        } catch (Exception $e) {
+            Log::error('日期分析错误: ' . $e->getMessage());
+            return Response::make()->failed('日期处理出错');
+        }
     }
 }
 
-
 /**
  * 校验日期格式
- * */
+ */
 if (!function_exists('validateData')) {
     function validateData($date)
     {
@@ -169,10 +158,9 @@ if (!function_exists('validateData')) {
     }
 }
 
-
 /**
  * 随机传递数据，判断是否符合格式
- * */
+ */
 if (!function_exists('paramsTransfer')) {
     function paramsTransfer($date)
     {
@@ -236,31 +224,26 @@ if (!function_exists('pageSetting')) {
 
 
 if (!function_exists('contentImgSrcReplace')) {
-    function contentImgSrcReplace($content)
+    function contentImgSrcReplace($content): string
     {
-        //匹配所有图片
-        $content = stripslashes($content);
-        //        preg_match_all('/<img[^>]*src="([^"]*)"[^>]*>/i',$content, $images);
-        // preg_match_all('/src="([^"]*)"[^>]*>/i', $content, $images);
-
-        preg_match_all('/<img.*?src=[\'|\"](.*?(?:[\.gif|\.jpg|\.jpeg]|\.png]|.bmp]))[\'|\"].*?[\/]?>/i', $content, $images);
-        //如果匹配到了图片进行处理
-        if (count($images) == 2) {
-            $imagesOnly = array_unique($images[1]);
-            foreach ($imagesOnly as $image) {
-                //如果是本地图片
-                if (!strstr($image, 'http')) {
-                    // $local_url = \Rap\Rap::image($image, '', 'aliOss')[0];
-                    $local_url =  imageUrl($image);
-
-                    //替换原来的图片地址
-                    $content = str_replace($image, $local_url, $content);
-                }
-            }
-            return $content;
-        } else {
-            return $content;
+        if (empty($content)) {
+            return '';
         }
+
+        $content = stripslashes($content);
+
+        // 优化正则表达式，修复文件扩展名匹配问题
+        $pattern = '/<img[^>]*?src=[\'"]([^\'"]+'
+            . '(?:\.(?:gif|jpe?g|png|bmp))?)[\'"][^>]*>/i';
+
+        return preg_replace_callback($pattern, function ($matches) {
+            $imageUrl = $matches[1];
+            // 仅处理非http开头的本地图片
+            if (!preg_match('/^https?:\/\//i', $imageUrl)) {
+                return str_replace($imageUrl, imageUrl($imageUrl), $matches[0]);
+            }
+            return $matches[0];
+        }, $content);
     }
 }
 
@@ -294,40 +277,45 @@ if (!function_exists('tokenSignature')) {
     }
 }
 
-
+/**
+ * 分页数据格式化（简化版）
+ */
 if (!function_exists('paginateFormat')) {
-    function paginateFormat($data)
+    function paginateFormat($data): array
     {
         return [
             'data' => $data->items(),
             'total' => $data->total(),
             'size' => $data->perPage(),
             'page' => $data->currentPage(),
-            // 'last_page' => $data->lastPage(),
-            // 'from' => $data->firstItem(),
-            // 'to' => $data->lastItem(),
-            // 'next_page_url' => $data->nextPageUrl(),
-            // 'prev_page_url' => $data->previousPageUrl(),
         ];
     }
 }
 
+/**
+ * 图片URL处理
+ */
 if (!function_exists('imageUrl')) {
-    function imageUrl($url)
+    function imageUrl(?string $url): string
     {
         if (empty($url)) {
             return '';
         }
-        if (strpos($url, 'aliyuncs.com') !== false && strpos($url, 'dtop') !== false) {
+
+        // 处理阿里云OSS的URL
+        if (str_contains($url, 'aliyuncs.com') && str_contains($url, 'dtop')) {
             $url = parse_url($url, PHP_URL_PATH);
         }
+
         $parseUrl = parse_url($url);
-        if (!isset($parseUrl['scheme']) || empty($parseUrl['scheme'])) {
-            return trim(config('dtop.domain_image'), '/') . '/' . trim($url, '/');
+        if (!isset($parseUrl['scheme'])) {
+            return rtrim(config('dtop.domain_image'), '/') . '/' . ltrim($url, '/');
         }
+
         return $url;
     }
 }
+
 if (!function_exists('apkUrl')) {
     function apkUrl($url)
     {
@@ -345,12 +333,11 @@ if (!function_exists('apkUrl')) {
     }
 }
 
-
-
-
-//钉钉异常发送通知
+/**
+ * CURL请求封装
+ */
 if (!function_exists('request_by_curl')) {
-    function request_by_curl($remote_server, $post_string)
+    function request_by_curl(string $remote_server, string $post_string)
     {
         $ch = curl_init();
         try {
@@ -381,7 +368,6 @@ if (!function_exists('request_by_curl')) {
     }
 }
 
-
 if (! function_exists('getUid')) {
     /**
      * 获取当前登录用户ID
@@ -401,7 +387,6 @@ if (! function_exists('getUid')) {
         }
     }
 }
-
 
 if (!function_exists('hash256')) {
     /**

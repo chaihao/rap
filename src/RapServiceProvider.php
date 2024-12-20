@@ -5,7 +5,6 @@ namespace Chaihao\Rap;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Routing\Router;
 use Chaihao\Rap\Exception\Handler;
-use Chaihao\Rap\Services\CurrentStaffService;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Cache\RateLimiting\Limit;
 
@@ -45,11 +44,6 @@ class RapServiceProvider extends ServiceProvider
                 'password_timeout' => $config['password_timeout'] ?? null,
             ]);
             $this->app['config']->set('auth', $merged);
-        });
-
-        // 注册 current_staff 单例
-        $this->app->singleton('current_staff', function ($app) {
-            return new CurrentStaffService();
         });
     }
 
