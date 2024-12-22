@@ -31,13 +31,6 @@ class RapServiceProvider extends ServiceProvider
             $this->commands($kernel->all());
         }
 
-        if ($this->app->environment('local')) {
-            if (class_exists(IdeHelperServiceProvider::class)) {
-                $this->app->register(IdeHelperServiceProvider::class);
-            }
-        }
-
-
         // 修改 auth 配置合并方式
         $this->app->booting(function () {
             $config = $this->app['config']->get('auth', []);
