@@ -221,9 +221,9 @@ class PermissionService extends BaseService
    /**
     * 添加权限
     * @throws ApiException
-    * @return array ['message' => string, 'count' => int]
+    * @return array<string, mixed>
     */
-   public function addPermission(): array
+   public function addPermission()
    {
       try {
          return DB::transaction(function () {
