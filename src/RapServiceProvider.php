@@ -2,11 +2,12 @@
 
 namespace Chaihao\Rap;
 
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Routing\Router;
 use Chaihao\Rap\Exception\Handler;
-use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\ServiceProvider;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\RateLimiter;
+use Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider;
 
 class RapServiceProvider extends ServiceProvider
 {
@@ -29,6 +30,13 @@ class RapServiceProvider extends ServiceProvider
             $kernel = new \Chaihao\Rap\Foundation\Kernel($this->app, $this->app['events']);
             $this->commands($kernel->all());
         }
+
+        if ($this->app->environment('local')) {
+            if (class_exists(IdeHelperServiceProvider::class)) {
+                $this->app->register(IdeHelperServiceProvider::class);
+            }
+        }
+
 
         // 修改 auth 配置合并方式
         $this->app->booting(function () {
@@ -128,7 +136,7 @@ class RapServiceProvider extends ServiceProvider
     // 限流配置
     //     protected function configureRateLimiting(): void
     // {
-    //     // 定义不同的限流规则
+    //     // ��义不同的限流规则
     //     RateLimiter::for('login', function ($request) {
     //         return Limit::perMinute(5)->by($request->ip());
     //     });

@@ -128,6 +128,7 @@ throw new ApiException('操作失败', ApiException::BAD_REQUEST);
 # 默认中间件组 rap-api
 [
     'check.auth',
+    'permission',
     'request.response.logger'
 ]
 ```

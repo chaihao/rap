@@ -29,6 +29,6 @@
         "predis/predis": "^2.3"
     },
     "require-dev": {
-        "barryvdh/laravel-ide-helper": "^3.1@dev"
+        "barryvdh/laravel-ide-helper": "^3.3"
     }
 }
