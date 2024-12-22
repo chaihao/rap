@@ -14,6 +14,14 @@ abstract class BaseService
     protected array $exportableFields = [];
     protected array $allowedSortFields = [];
 
+    /**
+     * 锁配置
+     */
+    protected array $lockConfig = [
+        'timeout' => 10,      // 锁超时时间（秒）
+        'waitTimeout' => 3,   // 等待获取锁超时时间（秒）
+        'prefix' => 'lock',   // 锁前缀
+    ];
 
     /**
      * 设置模型
@@ -1216,5 +1224,147 @@ abstract class BaseService
             'last_page' => $data->lastPage(),
             'per_page' => $data->perPage(),
         ];
+    }
+
+    /**
+     * 使用锁执行操作
+     * 
+     * @param string $lockKey 锁键名
+     * @param callable $callback 需要在锁内执行的操作
+     * @param array $options 自定义选项
+     * @return mixed
+     * @throws ApiException
+     */
+    protected function withLock(string $lockKey, callable $callback, array $options = []): mixed
+    {
+        // 合并自定义选项
+        $config = array_merge($this->lockConfig, $options);
+
+        // 获取锁实例
+        $lock = $this->getLock($lockKey, $config);
+
+        try {
+            // 尝试获取锁
+            if (!$this->acquireLock($lock, $config['waitTimeout'])) {
+                throw new ApiException('操作太频繁，请稍后再试', 429);
+            }
+
+            // 执行回调
+            return $callback();
+        } catch (\Throwable $e) {
+            // 记录错误日志
+            \Log::error('Lock operation failed', [
+                'key' => $lockKey,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            throw $e;
+        } finally {
+            // 确保锁被释放
+            $this->releaseLock($lock);
+        }
+    }
+
+    /**
+     * 获取锁实例
+     */
+    protected function getLock(string $key, array $config): \Illuminate\Contracts\Cache\Lock
+    {
+        return Cache::lock(
+            $this->getFullLockKey($key),
+            $config['timeout']
+        );
+    }
+
+    /**
+     * 获取完整的锁键名
+     */
+    protected function getFullLockKey(string $key): string
+    {
+        return sprintf('%s:%s', $this->lockConfig['prefix'], $key);
+    }
+
+    /**
+     * 尝试获取锁
+     */
+    protected function acquireLock(\Illuminate\Contracts\Cache\Lock $lock, int $waitTimeout): bool
+    {
+        return $lock->block($waitTimeout);
+    }
+
+    /**
+     * 释放锁
+     */
+    protected function releaseLock(\Illuminate\Contracts\Cache\Lock $lock): void
+    {
+        try {
+            optional($lock)->release();
+        } catch (\Throwable $e) {
+            \Log::warning('Failed to release lock', [
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * 生成锁键名
+     */
+    protected function generateLockKey(string $operation, $identifier = null, string $suffix = null): string
+    {
+        $parts = [
+            $this->getModel()->getTable(),
+            $operation
+        ];
+
+        if ($identifier !== null) {
+            $parts[] = $identifier;
+        }
+
+        if ($suffix !== null) {
+            $parts[] = $suffix;
+        }
+
+        return implode(':', $parts);
+    }
+
+    /**
+     * 创建记录（带锁）
+     */
+    public function addWithLock(array $data, bool $validate = true, array $lockOptions = []): Model
+    {
+        $lockKey = $this->generateLockKey('add');
+
+        return $this->withLock($lockKey, function () use ($data, $validate) {
+            return DB::transaction(function () use ($data, $validate) {
+                return $this->add($data, $validate);
+            });
+        }, $lockOptions);
+    }
+
+    /**
+     * 更新记录（带锁）
+     */
+    public function editWithLock(int $id, array $data, array $lockOptions = []): Model
+    {
+        $lockKey = $this->generateLockKey('edit', $id);
+
+        return $this->withLock($lockKey, function () use ($id, $data) {
+            return DB::transaction(function () use ($id, $data) {
+                return $this->edit($id, $data);
+            });
+        }, $lockOptions);
+    }
+
+    /**
+     * 批量操作带锁
+     */
+    public function batchWithLock(string $operation, array $ids, callable $callback, array $lockOptions = []): mixed
+    {
+        $lockKey = $this->generateLockKey('batch', implode('-', $ids), $operation);
+
+        return $this->withLock($lockKey, function () use ($callback) {
+            return DB::transaction($callback);
+        }, $lockOptions);
     }
 }

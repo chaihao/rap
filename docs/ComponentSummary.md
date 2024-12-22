@@ -180,10 +180,21 @@ php artisan make:repositories UserRepository
 - 解决跨域请求头设置不全的问题
 - 修正代码生成器模板格式错误
 
+
+### v1.1.2 发布说明
+
+#### 新增功能
+- 添加带锁操作功能
+- 增强异常处理
+
+#### 系统优化
+- 改进缓存策略
+- 完善日志记录格式
+
 #### 升级建议
 建议所有用户升级到此版本以获得最新的功能改进和问题修复。
 
 #### 升级方法
 ```bash
-composer require chaihao/laravel-rap-admin:^1.1.1
+composer require chaihao/laravel-rap-admin:^1.1.2
 ```

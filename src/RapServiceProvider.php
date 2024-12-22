@@ -4,10 +4,12 @@ namespace Chaihao\Rap;
 
 use Illuminate\Routing\Router;
 use Chaihao\Rap\Exception\Handler;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
 use Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider;
+use Tymon\JWTAuth\Providers\Storage\Illuminate;
 
 class RapServiceProvider extends ServiceProvider
 {
@@ -25,6 +27,12 @@ class RapServiceProvider extends ServiceProvider
             Handler::class
         );
 
+        // 注册jwt缓存
+        $this->app->singleton(Illuminate::class, function () {
+            // 从配置文件获取缓存驱动，默认使用redis
+            $store = config('rap.jwt.cache_store', 'redis');
+            return new Illuminate(Cache::store($store));
+        });
         // 注册自定义命令
         if ($this->app->runningInConsole()) {
             $kernel = new \Chaihao\Rap\Foundation\Kernel($this->app, $this->app['events']);
@@ -36,14 +44,15 @@ class RapServiceProvider extends ServiceProvider
             $config = $this->app['config']->get('auth', []);
             $rapAuth = require __DIR__ . '/../config/auth.php';
 
-            // 正确的合并顺序：保留两边的配置，但允许主项目配置覆盖组件配置
-            $merged = array_merge_recursive([
-                'defaults' => $config['defaults'] ?? [],
+            // 优化配置合并逻辑
+            $merged = [
+                'defaults' => $config['defaults'] ?? $rapAuth['defaults'] ?? [],
                 'guards' => array_merge($rapAuth['guards'] ?? [], $config['guards'] ?? []),
                 'providers' => array_merge($rapAuth['providers'] ?? [], $config['providers'] ?? []),
                 'passwords' => array_merge($rapAuth['passwords'] ?? [], $config['passwords'] ?? []),
-                'password_timeout' => $config['password_timeout'] ?? null,
-            ]);
+                'password_timeout' => $config['password_timeout'] ?? $rapAuth['password_timeout'] ?? null,
+            ];
+
             $this->app['config']->set('auth', $merged);
         });
     }
@@ -116,37 +125,32 @@ class RapServiceProvider extends ServiceProvider
     // 添加这个新方法来配置限流
     protected function configureRateLimiting(): void
     {
+
+        // 使用throttle:api 每分钟 60 次
+        // throttle:30,1 每分钟30次
         RateLimiter::for('api', function ($request) {
             return Limit::perMinute(60)->by(
                 optional($request->user())->id ?: $request->ip()
             );
         });
+
+
+
+
+        // 示例：在路由中使用登录限流
+        // Route::post('/login', 'AuthController@login')->middleware('throttle:login');
+
+        // 示例：在路由中使用敏感接口限流
+        // Route::post('/sensitive-data', 'DataController@sensitive')->middleware('throttle:sensitive');
+
+        // 定义敏感操作的限流器：每IP每分钟最多5次请求
+        RateLimiter::for('sensitive', function ($request) {
+            return Limit::perMinute(5)->by($request->ip());
+        });
+
+        // 定义登录接口的限流器：每IP每分钟最多3次请求
+        RateLimiter::for('login', function ($request) {
+            return Limit::perMinute(3)->by($request->ip());
+        });
     }
-
-
-
-
-    // 限流配置
-    //     protected function configureRateLimiting(): void
-    // {
-    //     // ��义不同的限流规则
-    //     RateLimiter::for('login', function ($request) {
-    //         return Limit::perMinute(5)->by($request->ip());
-    //     });
-
-    //     RateLimiter::for('sensitive-api', function ($request) {
-    //         return Limit::perMinute(30)->by(optional($request->user())->id ?: $request->ip());
-    //     });
-    // }
-
-    //     // 登录接口限制每IP每分钟5次
-    // Route::post('/login', 'AuthController@login')->middleware('throttle:login');
-
-    // // 敏感接口限制每用户每分钟30次
-    // Route::post('/sensitive-data', 'DataController@sensitive')->middleware('throttle:sensitive-api');
-
-    // // 普通接口不做限制
-    // Route::post('/normal-data', 'DataController@normal');
-
-
 }

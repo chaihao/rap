@@ -39,9 +39,6 @@ class ArticleService extends BaseService
             // 增加浏览次数
             $article->increment('view_count');
 
-            // 清除缓存
-            $this->clearModelCache();
-
             DB::commit();
             return $this->success($article);
         } catch (\Throwable $e) {

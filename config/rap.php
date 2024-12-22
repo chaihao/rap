@@ -19,7 +19,7 @@ return [
         'App\\Http\\Controllers\\',
     ],
     'controller' => [
-        'version' => env('RAP_CONTROLLER_VERSION', 'V1\\'), // 控制器版本
+        'version' => env('RAP_CONTROLLER_VERSION', ''), // 控制器版本
     ],
     'create_services' => [
         'model' => env('RAP_CREATE_SERVICES_MODEL', true), // 创建service时，同时创建model
