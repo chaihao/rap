@@ -66,4 +66,78 @@ class Permissions extends Permission
         'detail' => ['id'],
         'status' => ['id', 'status']
     ];
+
+    /**
+     * 自定义验证属性
+     */
+    public function setValidatorAttributes(): array
+    {
+        return [
+            'name' => '权限名称',
+            'slug' => '权限标识',
+            'guard_name' => '守卫名称',
+            'status' => '状态',
+            'is_login' => '登录状态',
+            'action' => '操作方法',
+            'controller' => '控制器',
+            'group' => '分组',
+            'group_name' => '分组名称',
+            'method' => '请求方法',
+            'middleware' => '中间件',
+            'prefix' => '路由前缀',
+            'uri' => '请求路径'
+        ];
+    }
+
+    /**
+     * 自定义验证消息
+     */
+    public function setValidatorMessage(): array
+    {
+        return [
+            'name.required' => '权限名称不能为空',
+            'name.unique' => '权限名称已存在',
+            'slug.required' => '权限标识不能为空',
+            'slug.unique' => '权限标识已存在',
+            'guard_name.required' => '守卫名称不能为空',
+            'status.required' => '状态不能为空',
+            'status.in' => '状态值无效',
+            'is_login.required' => '登录状态不能为空',
+            'is_login.in' => '登录状态值无效'
+        ];
+    }
+
+    /**
+     * 列表关联
+     */
+    public function listWithRelations(): array
+    {
+        return [];
+    }
+
+    /**
+     * 详情关联
+     */
+    public function getWithRelations(): array
+    {
+        return [];
+    }
+
+    /**
+     * 列表字段
+     */
+    public function getListFields(): array
+    {
+        return [
+            'id',
+            'name',
+            'slug',
+            'guard_name',
+            'status',
+            'group',
+            'group_name',
+            'is_login',
+            'created_at'
+        ];
+    }
 }

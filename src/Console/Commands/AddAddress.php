@@ -26,31 +26,57 @@ class AddAddress extends Command
      */
     public function handle()
     {
-        $this->setData();
+        try {
+            $this->setData();
+        } catch (\Exception $e) {
+            $this->error('添加地址数据失败：' . $e->getMessage());
+            return 1;
+        }
+        return 0;
     }
 
-
-
+    /**
+     * 设置地址数据
+     */
     public function setData()
     {
         $this->info('开始添加地址数据');
         $jsonData = file_get_contents(__DIR__ . '/../../resources/json/address_data.json');
 
+        if (!$jsonData) {
+            throw new \Exception('无法读取地址数据文件');
+        }
+
         $data = json_decode($jsonData, true);
 
-        SysAddress::truncate();
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new \Exception('JSON 解析错误：' . json_last_error_msg());
+        }
 
-        $this->insertAddressData($data);
-
-        $this->info('地址数据添加成功');
+        \DB::beginTransaction();
+        try {
+            SysAddress::truncate();
+            $this->insertAddressData($data);
+            \DB::commit();
+            $this->info('地址数据添加成功');
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            throw $e;
+        }
     }
-
+    /**
+     * 插入地址数据
+     * @param array $data 地址数据
+     * @param int $parentCode 父级代码
+     */
     private function insertAddressData($data, $parentCode = 0)
     {
-        try {
-            $batchData = [];
-            $batchSize = 300; // 设置批量插入的最大数量
+        $batchData = [];
+        $batchSize = 300;
+        $totalCount = count($data);
+        $progress = $this->output->createProgressBar($totalCount);
 
+        try {
             foreach ($data as $item) {
                 $addressData = [
                     'code' => $item['code'],
@@ -59,24 +85,32 @@ class AddAddress extends Command
                 ];
                 $batchData[] = $addressData;
 
-                // 当批量数据达到300条时，执行插入操作
                 if (count($batchData) >= $batchSize) {
                     SysAddress::insert($batchData);
-                    $batchData = []; // 清空批量数据数组，准备下一批
+                    $batchData = [];
                 }
 
                 if (isset($item['children']) && !empty($item['children'])) {
                     $this->insertAddressData($item['children'], $item['code']);
                 }
+
+                $progress->advance();
             }
 
-            // 插入剩余的数据（如果有的话）
             if (!empty($batchData)) {
                 SysAddress::insert($batchData);
             }
+
+            $progress->finish();
+            $this->line(''); // 添加换行
+
         } catch (\Exception $e) {
-            // 错误处理
-            \Log::error('插入地址数据时发生错误: ' . $e->getMessage());
+            \Log::error('插入地址数据失败', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            throw $e;
         }
     }
 }

@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Spatie\Permission\Models\{Permission, Role};
+use PDOException;
 
 class PermissionService extends BaseService
 {
@@ -31,10 +32,7 @@ class PermissionService extends BaseService
     */
    public function givePermissionTo(int $userId, string|array $permissions)
    {
-      $user = $this->model::find($userId);
-      if (!$user) {
-         throw new ApiException('用户不存在');
-      }
+      $user = $this->findUser($userId);
       $user->givePermissionTo($permissions);
       return $user;
    }
@@ -47,10 +45,7 @@ class PermissionService extends BaseService
     */
    public function revokePermissionTo(int $userId, string|array $permissions)
    {
-      $user = $this->model::find($userId);
-      if (!$user) {
-         throw new ApiException('用户不存在');
-      }
+      $user = $this->findUser($userId);
       $user->revokePermissionTo($permissions);
       return $user;
    }
@@ -63,10 +58,7 @@ class PermissionService extends BaseService
     */
    public function syncPermissions(int $userId, array $permissions): Staff
    {
-      $user = $this->model::find($userId);
-      if (!$user) {
-         throw new ApiException('用户不存在');
-      }
+      $user = $this->findUser($userId);
       $user->syncPermissions($permissions);
       return $user;
    }
@@ -78,7 +70,7 @@ class PermissionService extends BaseService
     * @param array $permissions
     * @return Role 返回角色模型
     */
-   public function syncRolePermissions(int $roleId, array $permissions)
+   public function syncRolePermissions(int $roleId, array $permissions): Role
    {
       $role = Roles::find($roleId);
       if (!$role) {
@@ -96,10 +88,7 @@ class PermissionService extends BaseService
     */
    public function getUserPermissions(int $userId, string $fieldColumn = ''): array
    {
-      $user = $this->model::find($userId);
-      if (!$user) {
-         throw new ApiException('用户不存在');
-      }
+      $user = $this->findUser($userId);
 
       $permissions = $user->getAllPermissions();
 
@@ -121,16 +110,13 @@ class PermissionService extends BaseService
    }
 
    /**
-    * 获取用户的所有角色
+    * 获取用户的所有��色
     * @param int $userId
     * @return array
     */
    public function getUserRoles(int $userId, string $fieldColumn = ''): array
    {
-      $user = $this->model::find($userId);
-      if (!$user) {
-         throw new ApiException('用户不存在');
-      }
+      $user = $this->findUser($userId);
       $roles = $user->roles;
       if ($fieldColumn && in_array($fieldColumn, ['id', 'name', 'slug'])) {
          return $roles->pluck($fieldColumn)->toArray();
@@ -153,10 +139,7 @@ class PermissionService extends BaseService
     */
    public function assignRole(int $id, string|array $role)
    {
-      $user = $this->model::find($id);
-      if (!$user) {
-         throw new ApiException('用户不存在');
-      }
+      $user = $this->findUser($id);
       $user->assignRole($role);
       return $user;
    }
@@ -169,10 +152,7 @@ class PermissionService extends BaseService
     */
    public function removeRole(int $id, string $role)
    {
-      $user = $this->model::find($id);
-      if (!$user) {
-         throw new ApiException('用户不存在');
-      }
+      $user = $this->findUser($id);
       $user->removeRole($role);
       return $user;
    }
@@ -240,9 +220,8 @@ class PermissionService extends BaseService
 
    /**
     * 添加权限
-    * @return array 添加的权限ID数组
     * @throws ApiException
-    * @return array
+    * @return array ['message' => string, 'count' => int]
     */
    public function addPermission(): array
    {
@@ -258,30 +237,47 @@ class PermissionService extends BaseService
                });
 
             // 软删除现有权限
-            Permissions::whereNull('deleted_at')->delete();
+            $deletedCount = Permissions::whereNull('deleted_at')->delete();
+
             // 设置超时时间
             ini_set('max_execution_time', 300);
 
-            // 开发环境直接批量插入
-            $this->addData($routeCollection, $existingPermissions);
-            return ['message' => '添加权限成功'];
+            // 添加新权限并获取添加数量
+            $addedCount = $this->addData($routeCollection, $existingPermissions);
+
+            return [
+               'message' => '添加权限成功',
+               'count' => $addedCount
+            ];
          });
-      } catch (ApiException $e) {
-         Log::error('添加权限失败：' . $e->getMessage(), [
+      } catch (Exception $e) {
+         Log::error('添加权限失败', [
+            'message' => $e->getMessage(),
             'trace' => $e->getTraceAsString()
          ]);
-         throw new ApiException('添加权限失败：' . $e->getMessage());
+
+         // 建议添加更具体的错误信息分类
+         if ($e instanceof PDOException) {
+            throw new ApiException('数据库操作失败');
+         }
+
+         throw new ApiException(
+            $e instanceof ApiException ? $e->getMessage() : '添加权限失败，请检查系统日志'
+         );
       }
    }
 
    /**
     * 根据环境添加权限
-    * @param  $routeCollection 路由集合
-    * @param  $existingPermissions 已存在的权限集合
+    * @param $routeCollection 路由集合
+    * @param $existingPermissions 已存在的权限集合
+    * @return int 添加的权限数量
     */
-   public function addData($routeCollection, $existingPermissions)
+   public function addData($routeCollection, $existingPermissions): int
    {
       $batchData = [];
+      $updatedCount = 0;
+
       // 收集所有需要添加的权限数据
       foreach ($routeCollection as $route) {
          $routeInfo = $this->buildRouteInfo($route);
@@ -295,6 +291,7 @@ class PermissionService extends BaseService
             // 更新现有权限
             $existingPermission = $existingPermissions[$key];
             $this->updateExistingPermission($existingPermission, $routeInfo);
+            $updatedCount++;
          } else {
             // 手动将 middleware 数组转换为 JSON 字符串
             $routeInfo['middleware'] = json_encode($routeInfo['middleware']);
@@ -308,6 +305,8 @@ class PermissionService extends BaseService
       if (!empty($batchData)) {
          Permissions::insert($batchData);
       }
+
+      return count($batchData) + $updatedCount;
    }
 
 
@@ -410,5 +409,20 @@ class PermissionService extends BaseService
       $path = strtolower(preg_replace('/([a-z])([A-Z])/', '$1.$2', $path));
 
       return $path;
+   }
+
+   /**
+    * 查找用户
+    * @param int $userId 用户ID
+    * @return Staff 用户模型
+    * @throws ApiException 如果用户不存在，则抛出异常
+    */
+   private function findUser(int $userId): Staff
+   {
+      $user = $this->model::find($userId);
+      if (!$user) {
+         throw new ApiException('用户不存在');
+      }
+      return $user;
    }
 }

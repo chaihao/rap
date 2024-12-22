@@ -106,7 +106,7 @@ class RapServiceProvider extends ServiceProvider
         // 注册中间件组
         $router->middlewareGroup('rap-api', [
             'check.auth',
-            // 'permission',
+            'permission',
             // 'throttle:api',
             'request.response.logger',
         ]);

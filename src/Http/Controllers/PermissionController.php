@@ -166,8 +166,7 @@ class PermissionController extends BaseController
      */
     public function getAllPermissions(): JsonResponse
     {
-        $permissionService = new PermissionService();
-        $data = $permissionService->getAllPermissions();
+        $data = $this->service->getAllPermissions();
         return $this->success($data);
     }
 
@@ -176,8 +175,7 @@ class PermissionController extends BaseController
      */
     public function addPermission(): JsonResponse
     {
-        $permissionService = new PermissionService();
-        $data = $permissionService->addPermission();
+        $data = $this->service->addPermission();
         return $this->success($data);
     }
 }
