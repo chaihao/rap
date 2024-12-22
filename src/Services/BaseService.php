@@ -282,8 +282,8 @@ abstract class BaseService
 
             // 格式化数据
             $data = $this->getModel()->formatAttributes($data);
-            // 过滤可填充数据
-            $fillableData = $this->filterFillableData($data);
+            // 过滤可填充数据,传入add场景
+            $fillableData = $this->filterFillableData($data, 'add');
 
             // 添加创建者ID
             $this->addCreatorId($fillableData);
@@ -330,8 +330,8 @@ abstract class BaseService
             // 格式化数据
             $data = $this->getModel()->formatAttributes($data);
 
-            // 过滤可填充数据
-            $fillableData = $this->filterFillableData($data);
+            // 过滤可填充数据,传入edit场景
+            $fillableData = $this->filterFillableData($data, 'edit');
 
             // 添加更新者ID
             $this->addUpdaterId($fillableData);
@@ -393,15 +393,29 @@ abstract class BaseService
      * 过滤可填充数据
      * 
      * @param array $data 原始数据
+     * @param string $scenario 场景名称
      * @return array 过滤后的数据
      */
-    protected function filterFillableData(array $data): array
+    protected function filterFillableData(array $data, string $scenario = ''): array
     {
+        // 获取可填充字段
         $fillable = $this->getModel()->getFillable();
 
         // 如果没有定义可填充字段,返回原始数据
         if (empty($fillable)) {
             return $data;
+        }
+
+        // 如果指定了场景且模型中定义了对应场景的字段限制
+        if (
+            $scenario && property_exists($this->getModel(), 'scenarios')
+            && isset($this->getModel()->scenarios[$scenario])
+        ) {
+            // 使用场景中定义的字段与可填充字段的交集
+            $fillable = array_intersect(
+                $this->getModel()->scenarios[$scenario],
+                $fillable
+            );
         }
 
         // 只保留可填充字段

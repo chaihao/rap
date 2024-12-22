@@ -89,6 +89,74 @@ class StaffController extends BaseController
         return $this->failed('未找到用户信息');
     }
 
+
+    /**
+     * 修改密码
+     */
+    public function changePassword(): JsonResponse
+    {
+        $params = $this->request->all();
+        $this->checkValidator($params, [
+            'id' => 'required|integer',
+            'password' => 'required|string|min:6|max:18',
+        ], [
+            'id.required' => 'ID不能为空',
+            'id.integer' => 'ID必须是整数',
+            'password.required' => '密码不能为空',
+            'password.min' => '密码不能少于6个字符',
+            'password.max' => '密码不能超过18个字符',
+        ]);
+
+        return $this->success($this->service->changePassword($this->request->all()));
+    }
+
+
+    /**
+     * 本人修改密码,需要验证旧密码
+     */
+    public function changePasswordBySelf(): JsonResponse
+    {
+        $params = $this->request->all();
+        $this->checkValidator($params, [
+            'old_password' => 'required|string|min:6|max:18',
+            'password' => 'required|string|min:6|max:18',
+        ]);
+
+        $this->service->changePasswordBySelf($params);
+        return $this->success('修改密码成功');
+    }
+
+
+    /**
+     * 添加个人信息
+     */
+    public function addStaff(): JsonResponse
+    {
+        $params = $this->request->all();
+        $this->service->checkValidator($params, 'add');
+        return $this->success($this->service->addStaff($this->request->all()));
+    }
+
+    /**
+     * 修改个人信息
+     */
+    public function editStaff(): JsonResponse
+    {
+        $params = $this->request->all();
+        $this->service->checkValidator($params, 'edit');
+        return $this->success($this->service->editStaff($this->request->all()));
+    }
+
+    /**
+     * 删除个人信息
+     */
+    public function deleteStaff(): JsonResponse
+    {
+        $params = $this->request->all();
+        $this->service->checkValidator($params, 'delete');
+        return $this->success($this->service->deleteStaff($this->request->all()));
+    }
+
     /**
      * 退出登录
      */

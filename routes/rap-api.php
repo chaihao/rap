@@ -22,11 +22,14 @@ Route::prefix($prefix)->group(function () {
         if (config('rap.models.staff.class') == \Chaihao\Rap\Models\Auth\Staff::class) {
             // 员工
             Route::prefix('auth')->controller(StaffController::class)->name('员工管理.')->group(function () {
-                Route::post('staff_info', 'staffInfo')->name('获取员工信息');
+                Route::post('detail', 'staffInfo')->name('获取员工信息');
                 Route::post('add', 'addStaff')->name('添加账户');
                 Route::post('logout', 'logout')->name('登出');
-                Route::post('edit', 'edit')->name('编辑账户');
-                Route::post('edit_password', 'editPassword')->name('编辑账户密码');
+                Route::post('edit', 'editStaff')->name('编辑账户');
+                Route::post('change_password', 'changePassword')->name('编辑账户密码');
+                Route::post('change_password_by_self', 'changePasswordBySelf')->name('本人修改密码');
+                Route::post('delete', 'deleteStaff')->name('删除账户');
+                Route::post('list', 'list')->name('获取员工列表');
             });
         }
 

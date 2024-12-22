@@ -8,28 +8,28 @@ class SysAddress extends BaseModel
 {
 
 
-    /**
-     * 表名
-     */
+
+    // 基础配置
     protected $table = 'sys_address';
-
-    /**
-     * 可批量赋值的属性
-     */
-    protected $fillable = ["code", "name", "parent_code"];
-
-    /**
-     * 数据类型转换
-     */
+    protected $fillable = ["id", "code", "name", "parent_code"];
     protected $casts = [
         "code" => "integer",
         "name" => "string",
         "parent_code" => "integer"
     ];
 
-    /**
-     * 验证规则
-     */
+    // 缓存配置
+    protected bool $modelCache = true;
+    protected int $cacheTTL = 3600;
+    protected string $cachePrefix = '';
+
+    // 验证配置
+    public $scenarios = [
+        'add' => ['code', 'name', 'parent_code'],
+        'edit' => ['id', 'code', 'name', 'parent_code'],
+        'delete' => ['id'],
+        'detail' => ['id']
+    ];
     public $rules = [
         "code" => "required|integer",
         "name" => "required|string|max:64",
@@ -37,14 +37,33 @@ class SysAddress extends BaseModel
     ];
 
     /**
-     * 场景验证规则
+     * 获取验证器错误信息
      */
-    public $scenarios = [
-        'add' => ['code', 'name', 'parent_code'],
-        'edit' => ['id', 'code', 'name', 'parent_code'],
-        'delete' => ['id'],
-        'detail' => ['id']
-    ];
+    public function setValidatorMessage(): array
+    {
+        return [
+            "id.required" => "ID不能为空",
+            "code.required" => "地址编码不能为空",
+            "code.integer" => "地址编码必须是整数",
+            "name.required" => "地址名称不能为空",
+            "name.string" => "地址名称必须是字符串",
+            "name.max" => "地址名称不能超过255个字符",
+            "parent_code.required" => "父级编码不能为空",
+            "parent_code.integer" => "父级编码必须是整数"
+        ];
+    }
+
+    /**
+     * 获取验证器自定义属性
+     */
+    public function setValidatorAttributes(): array
+    {
+        return [
+            "code" => "地址编码",
+            "name" => "地址名称",
+            "parent_code" => "父级编码"
+        ];
+    }
 
     /**
      * 自定义列表展示字段
@@ -70,9 +89,6 @@ class SysAddress extends BaseModel
     public function formatOutput(array $data): array
     {
         $data = parent::formatOutput($data);
-
-        // 在此添加自定义格式化逻辑
-
         return $data;
     }
 }
