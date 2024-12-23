@@ -21,6 +21,9 @@ class PermissionService extends BaseService
 
    public function __construct()
    {
+      if (!is_subclass_of(config('rap.models.staff.class'), Staff::class)) {
+         throw new ApiException('配置的 staff 模型类必须继承自 Chaihao\Rap\Models\Auth\Staff');
+      }
       $this->model = app(config('rap.models.staff.class'));
    }
 
@@ -110,7 +113,7 @@ class PermissionService extends BaseService
    }
 
    /**
-    * 获取用户的所有��色
+    * 获取用户的所有角色
     * @param int $userId
     * @return array
     */
@@ -419,6 +422,7 @@ class PermissionService extends BaseService
     */
    private function findUser(int $userId): Staff
    {
+
       $user = $this->model::find($userId);
       if (!$user) {
          throw new ApiException('用户不存在');

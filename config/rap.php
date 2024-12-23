@@ -27,6 +27,7 @@ return [
     ],
     'models' => [
         'staff' => [
+            // 配置的模型类必须继承自 Chaihao\Rap\Models\Auth\Staff
             'class' => \Chaihao\Rap\Models\Auth\Staff::class,
             'table' => 'staff',
         ],
