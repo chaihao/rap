@@ -21,7 +21,7 @@ class PermissionService extends BaseService
 
    public function __construct()
    {
-      if (!is_subclass_of(config('rap.models.staff.class'), Staff::class)) {
+      if (!is_subclass_of(config('rap.models.staff.class'), Staff::class) && config('rap.models.staff.class') != Staff::class) {
          throw new ApiException('配置的 staff 模型类必须继承自 Chaihao\Rap\Models\Auth\Staff');
       }
       $this->model = app(config('rap.models.staff.class'));
