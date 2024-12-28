@@ -105,7 +105,7 @@ class Article extends BaseModel
      * 定义列表需要加载的关联
      * 用于优化 N+1 问题
      */
-    public function listWithRelations(): array
+    public function listWithRelation(): array
     {
         return ['category:id,name', 'creator:id,name'];
     }

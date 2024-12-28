@@ -78,8 +78,8 @@ abstract class BaseService
      */
     protected function hasListRelations(): bool
     {
-        return method_exists($this->getModel(), 'listWithRelations') &&
-            !empty($this->getModel()->listWithRelations());
+        return method_exists($this->getModel(), 'listWithRelation') &&
+            !empty($this->getModel()->listWithRelation());
     }
     /**
      * 获取列表数据
@@ -148,8 +148,8 @@ abstract class BaseService
         $query->select($this->getModel()->getListFields());
 
         // 加载关联
-        if (method_exists($this->getModel(), 'listWithRelations')) {
-            $query->with($this->getModel()->listWithRelations());
+        if (method_exists($this->getModel(), 'listWithRelation')) {
+            $query->with($this->getModel()->listWithRelation());
         }
 
         // 应用创建者范围
@@ -719,8 +719,8 @@ abstract class BaseService
      */
     protected function hasGetRelations(): bool
     {
-        return method_exists($this->getModel(), 'getWithRelations') &&
-            !empty($this->getModel()->getWithRelations());
+        return method_exists($this->getModel(), 'getWithRelation') &&
+            !empty($this->getModel()->getWithRelation());
     }
 
 
@@ -814,9 +814,9 @@ abstract class BaseService
      */
     protected function applyListRelations($query): void
     {
-        // 如果模型有 listWithRelations 方法，则应用相关的关联
-        if (method_exists($this->getModel(), 'listWithRelations')) {
-            $query->with($this->getModel()->listWithRelations());
+        // 如果模型有 listWithRelation 方法，则应用相关的关联
+        if (method_exists($this->getModel(), 'listWithRelation')) {
+            $query->with($this->getModel()->listWithRelation());
         }
     }
 
@@ -1172,8 +1172,8 @@ abstract class BaseService
      */
     private function loadRelations($query): void
     {
-        if (method_exists($this->getModel(), 'getWithRelations')) {
-            $relations = $this->getModel()->getWithRelations();
+        if (method_exists($this->getModel(), 'getWithRelation')) {
+            $relations = $this->getModel()->getWithRelation();
             $query->with($relations);
         }
     }
