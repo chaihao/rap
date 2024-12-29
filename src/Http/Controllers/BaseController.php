@@ -69,9 +69,9 @@ abstract class BaseController extends Controller
     {
         try {
             $params = $this->request->all();
-            if (!empty($id)) {
-                $params['id'] = $id;
-            }
+            // 统一处理ID
+            $params['id'] = $id ?? $params['id'] ?? null;
+
             // 验证数据
             $this->checkValidator($params, 'edit');
 
@@ -88,11 +88,9 @@ abstract class BaseController extends Controller
     public function delete(int|null $id = null): JsonResponse
     {
         try {
-
             $params = $this->request->all();
-            if (!empty($id)) {
-                $params['id'] = $id;
-            }
+            // 统一处理ID
+            $params['id'] = $id ?? $params['id'] ?? null;
 
             // 验证ID
             $this->checkValidator($params, 'delete');
@@ -111,9 +109,9 @@ abstract class BaseController extends Controller
     {
         try {
             $params = $this->request->all();
-            if (!empty($id)) {
-                $params['id'] = $id;
-            }
+            // 统一处理ID
+            $params['id'] = $id ?? $params['id'] ?? null;
+
             // 验证ID
             $this->checkValidator($params, 'detail');
 
