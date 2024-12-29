@@ -2,6 +2,7 @@
 
 namespace Chaihao\Rap\Services;
 
+use Illuminate\Support\Facades\Log;
 use Chaihao\Rap\Exception\ApiException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -1253,7 +1254,7 @@ abstract class BaseService
             return $callback();
         } catch (\Throwable $e) {
             // 记录错误日志
-            \Log::error('Lock operation failed', [
+            Log::error('Lock operation failed', [
                 'key' => $lockKey,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -1301,7 +1302,7 @@ abstract class BaseService
         try {
             optional($lock)->release();
         } catch (\Throwable $e) {
-            \Log::warning('Failed to release lock', [
+            Log::warning('Failed to release lock', [
                 'error' => $e->getMessage()
             ]);
         }
