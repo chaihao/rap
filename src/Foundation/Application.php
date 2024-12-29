@@ -48,6 +48,7 @@ class Application extends LaravelApplication
 
         $providers = [
             \Chaihao\Rap\Providers\AppServiceProvider::class,
+            \Chaihao\Rap\Providers\EventServiceProvider::class,
             \Chaihao\Rap\Providers\CurrentStaffServiceProvider::class,
         ];
 
