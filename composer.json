@@ -6,8 +6,12 @@
     "version": "1.2.0",
     "autoload": {
         "psr-4": {
-            "Chaihao\\Rap\\": "src/"
-        }
+            "Chaihao\\Rap\\": "src/",
+            "Chaihao\\Rap\\Foundation\\": "src/Foundation/"
+        },
+        "files": [
+            "src/common.php"
+        ]
     },
     "extra": {
         "laravel": {
@@ -17,10 +21,7 @@
                 "Chaihao\\Rap\\Providers\\EventServiceProvider",
                 "Chaihao\\Rap\\Providers\\CurrentStaffServiceProvider"
             ]
-        },
-        "files": [
-            "src/common.php"
-        ]
+        }
     },
     "require": {
         "php": "^8.2",
