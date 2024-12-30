@@ -2,13 +2,11 @@
 
 namespace Chaihao\Rap\Http\Controllers;
 
-use Chaihao\Rap\Exception\ApiException;
-use Chaihao\Rap\Models\Sys\RolesModel;
-use Chaihao\Rap\Services\Sys\PermissionService;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
 use Illuminate\Http\Request;
+use Chaihao\Rap\Models\Sys\Roles;
 use Illuminate\Http\JsonResponse;
+use Spatie\Permission\Models\Permission;
+use Chaihao\Rap\Services\Sys\PermissionService;
 
 class PermissionController extends BaseController
 {
@@ -131,7 +129,7 @@ class PermissionController extends BaseController
      */
     public function getAllRoles()
     {
-        $roles = Role::all();
+        $roles = Roles::all();
         return $this->success($roles);
     }
 

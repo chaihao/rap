@@ -74,7 +74,13 @@ class OperationLog extends BaseModel
             "created_by_platform" => "创建人类型 1 总管理平台员工 3 用户"
         ];
     }
-
+    /**
+     * 格式化日期
+     */
+    public function serializeDate(\DateTimeInterface $date)
+    {
+        return $date->format('Y-m-d H:i:s');
+    }
     /**
      * 自定义列表展示字段
      */

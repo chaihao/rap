@@ -117,9 +117,9 @@ class PermissionService extends BaseService
    /**
     * 获取用户的所有角色
     * @param int $userId
-    * @return array
+    * @return Collection
     */
-   public function getUserRoles(int $userId, string $fieldColumn = ''): array
+   public function getUserRoles(int $userId, string $fieldColumn = ''): Collection
    {
       $cacheKey = "user_roles:{$userId}:{$fieldColumn}"; // 添加缓存键
       $roles = cache()->remember($cacheKey, 60, function () use ($userId) { // 缓存60秒
@@ -127,17 +127,7 @@ class PermissionService extends BaseService
          return $user->getRoleNames(); // 获取角色
       });
 
-      if ($fieldColumn && in_array($fieldColumn, ['id', 'name', 'slug'])) {
-         return $roles->pluck($fieldColumn)->toArray();
-      }
-      return $roles->map(function ($role) {
-         return [
-            'id' => $role->id,
-            'name' => $role->name,
-            'slug' => $role->slug,
-            'guard_name' => $role->guard_name
-         ];
-      })->toArray();
+      return $roles;
    }
 
    /**

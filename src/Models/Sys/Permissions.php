@@ -113,6 +113,13 @@ class Permissions extends Permission
     }
 
     /**
+     * 格式化日期
+     */
+    public function serializeDate(\DateTimeInterface $date)
+    {
+        return $date->format('Y-m-d H:i:s');
+    }
+    /**
      * 自定义列表展示字段
      */
     public function getListFields(): array

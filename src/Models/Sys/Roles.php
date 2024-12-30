@@ -44,4 +44,12 @@ class Roles extends Role
         'delete' => ['id'],
         'detail' => ['id']
     ];
+
+    /**
+     * 格式化日期
+     */
+    public function serializeDate(\DateTimeInterface $date)
+    {
+        return $date->format('Y-m-d H:i:s');
+    }
 }
