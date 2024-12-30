@@ -53,7 +53,7 @@ abstract class BaseController extends Controller
         try {
             $params = $this->request->all();
             // 验证数据
-            $this->checkValidator($params, 'add');
+            $this->service->checkValidator($params, 'add');
 
             $data = $this->service->add($params);
             return $this->success($data);
@@ -73,7 +73,7 @@ abstract class BaseController extends Controller
             $params['id'] = $id ?? $params['id'] ?? null;
 
             // 验证数据
-            $this->checkValidator($params, 'edit');
+            $this->service->checkValidator($params, 'edit');
 
             $data = $this->service->edit($params['id'], $params);
             return $this->success($data);
@@ -93,7 +93,7 @@ abstract class BaseController extends Controller
             $params['id'] = $id ?? $params['id'] ?? null;
 
             // 验证ID
-            $this->checkValidator($params, 'delete');
+            $this->service->checkValidator($params, 'delete');
 
             $this->service->delete($params['id']);
             return $this->success(null, '删除成功');
@@ -113,7 +113,7 @@ abstract class BaseController extends Controller
             $params['id'] = $id ?? $params['id'] ?? null;
 
             // 验证ID
-            $this->checkValidator($params, 'detail');
+            $this->service->checkValidator($params, 'detail');
 
             $data = $this->service->detail($params['id']);
             return $this->success($data);
@@ -144,7 +144,7 @@ abstract class BaseController extends Controller
             'sort_type' => 'in:asc,desc'
         ];
 
-        $this->checkValidator($params, $rules);
+        $this->service->checkValidator($params, $rules);
     }
 
     /**
@@ -176,6 +176,8 @@ abstract class BaseController extends Controller
         foreach ($fields as $field) {
             if (isset($allRules[$field])) {
                 $scenarioRules[$field] = $this->adjustRuleForScenario($allRules[$field], $field, $scenario, $data);
+            } elseif ($field === 'id') {
+                $scenarioRules[$field] = 'required|integer|exists:' . $this->model->getTable() . ',id';
             }
         }
 
@@ -290,7 +292,7 @@ abstract class BaseController extends Controller
                 $params['id'] = $id;
             }
             // 验证ID
-            $this->checkValidator($params, 'status');
+            $this->service->checkValidator($params, 'status');
 
             $status = $this->request->input('status');
             $data = $this->service->editStatus($params['id'], $status);
