@@ -578,7 +578,7 @@ abstract class BaseService
 
         $adjustmentMethods = [
             'edit' => 'adjustRuleForEdit',
-            'get' => 'adjustRuleForGet',
+            'detail' => 'adjustRuleForDetail',
             'status' => 'adjustRuleForStatus',
         ];
 
@@ -611,7 +611,7 @@ abstract class BaseService
      * @param array $data 需要验证的数据
      * @return string 调整后的规则
      */
-    private function adjustRuleForGet(string $rule, string $field, array $data): string
+    private function adjustRuleForDetail(string $rule, string $field, array $data): string
     {
         return $field === 'id' ? 'required|integer|exists:' . $this->getTable() . ',id' : $rule;
     }
