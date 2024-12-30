@@ -5,6 +5,7 @@ namespace Chaihao\Rap\Services;
 use Illuminate\Support\Facades\Log;
 use Chaihao\Rap\Exception\ApiException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\{Auth, DB, Validator, Schema, Cache};
 
@@ -98,11 +99,13 @@ abstract class BaseService
         // 应用基础查询
         $this->applyBaseQuery($query);
 
-        // 应用搜索条件
-        $this->applySearchConditions($query, $params);
-
-        // 应用排序
-        $this->applySorting($query, $params);
+        // 检查是否需要应用搜索条件和排序
+        if (!empty($params)) {
+            // 应用搜索条件
+            $this->applySearchConditions($query, $params);
+            // 应用排序
+            $this->applySorting($query, $params);
+        }
 
         // 获取分页数据
         $pageSize = $params['page_size'] ?? $this->getModel()->getPageSize();
@@ -160,17 +163,22 @@ abstract class BaseService
 
     /**
      * 应用搜索条件
+     * 
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param array $params 查询参数
+     * @return \Illuminate\Database\Eloquent\Builder
      */
-    protected function applySearchConditions($query, array $params): void
+    protected function applySearchConditions($query, array $params): Builder
     {
         // 参数处理
         $fillable = $this->getModel()->getFillable();
         foreach ($params as $field => $value) {
+            // 检查字段是否可填充
             if (!in_array($field, $fillable)) {
                 continue;
             }
-            // 如果值为空且不为0，则跳过
-            if (empty($value) && $value !== '0') {
+            // 如果值为空或未定义，则跳过
+            if (is_null($value) || (is_string($value) && trim($value) === '' && $value !== '0')) {
                 continue;
             }
 
@@ -195,6 +203,8 @@ abstract class BaseService
             // 处理普通条件
             $query->where($field, $value);
         }
+
+        return $query;
     }
     /**
      * 获取需要 JSON 过滤的字段
