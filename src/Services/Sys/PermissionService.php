@@ -91,9 +91,11 @@ class PermissionService extends BaseService
     */
    public function getUserPermissions(int $userId, string $fieldColumn = ''): array
    {
-      $user = $this->findUser($userId);
-
-      $permissions = $user->getAllPermissions();
+      $cacheKey = "user_permissions:{$userId}:{$fieldColumn}"; // 添加缓存键
+      $permissions = cache()->remember($cacheKey, 60, function () use ($userId, $fieldColumn) { // 缓存60秒
+         $user = $this->findUser($userId);
+         return $user->getAllPermissions(); // 获取用户权限
+      });
 
       if ($fieldColumn && in_array($fieldColumn, ['id', 'name', 'slug'])) {
          return $permissions->pluck($fieldColumn)->toArray();
@@ -119,8 +121,12 @@ class PermissionService extends BaseService
     */
    public function getUserRoles(int $userId, string $fieldColumn = ''): array
    {
-      $user = $this->findUser($userId);
-      $roles = $user->roles;
+      $cacheKey = "user_roles:{$userId}:{$fieldColumn}"; // 添加缓存键
+      $roles = cache()->remember($cacheKey, 60, function () use ($userId) { // 缓存60秒
+         $user = $this->findUser($userId);
+         return $user->getRoleNames(); // 获取角色
+      });
+
       if ($fieldColumn && in_array($fieldColumn, ['id', 'name', 'slug'])) {
          return $roles->pluck($fieldColumn)->toArray();
       }
