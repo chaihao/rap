@@ -2,18 +2,18 @@
 
 namespace  Chaihao\Rap\Services\Sys;
 
-use Chaihao\Rap\Exception\ApiException;
-use Chaihao\Rap\Models\Auth\Staff;
-use Chaihao\Rap\Models\Sys\Permissions;
-use Chaihao\Rap\Models\Sys\Roles;
-use Chaihao\Rap\Services\BaseService;
 use Exception;
-use Illuminate\Database\Eloquent\Collection;
+use PDOException;
+use Chaihao\Rap\Models\Sys\Roles;
+use Chaihao\Rap\Models\Auth\Staff;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Chaihao\Rap\Services\BaseService;
 use Illuminate\Support\Facades\Route;
+use Chaihao\Rap\Exception\ApiException;
+use Chaihao\Rap\Models\Sys\Permissions;
 use Spatie\Permission\Models\{Permission, Role};
-use PDOException;
 
 class PermissionService extends BaseService
 {
