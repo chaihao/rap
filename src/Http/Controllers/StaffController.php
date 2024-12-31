@@ -170,4 +170,14 @@ class StaffController extends BaseController
             return $this->failed('登出失敗: ' . $e->getMessage());
         }
     }
+
+    /**
+     * 获取员工列表
+     */
+    public function list(): JsonResponse
+    {
+        $params = $this->request->all();
+        $data = $this->service->getStaffList($params);
+        return $this->success($data);
+    }
 }
