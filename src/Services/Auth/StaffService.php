@@ -170,4 +170,35 @@ class StaffService extends BaseService
       JWTAuth::invalidate();
       return $this->success('登出成功');
    }
+
+   /**
+    * 获取员工列表
+    * 
+    * @param array $params 参数
+    * @return array
+    */
+   public function getStaffList(array $params): array
+   {
+      $query = Staff::query();
+
+      // 使用可选参数构建查询
+      $query->when(!empty($params['name']), function ($query) use ($params) {
+         $query->where('name', 'like', '%' . $params['name'] . '%');
+      })->when(!empty($params['phone']), function ($query) use ($params) {
+         $query->where('phone', 'like', '%' . $params['phone'] . '%');
+      })->when(!empty($params['email']), function ($query) use ($params) {
+         $query->where('email', 'like', '%' . $params['email'] . '%');
+      })->when(isset($params['status']) && is_numeric($params['status']), function ($query) use ($params) {
+         $query->where('status', $params['status']);
+      })->when(isset($params['sex']) && is_numeric($params['sex']), function ($query) use ($params) {
+         $query->where('sex', $params['sex']);
+      })->when(isset($params['is_super']) && is_numeric($params['is_super']), function ($query) use ($params) {
+         $query->where('is_super', $params['is_super']);
+      });
+
+      // 获取分页数据
+      $pageSize = $params['page_size'] ?? $this->getModel()->getPageSize();
+      $data = $query->paginate($pageSize);
+      return $this->paginateFormat($data);
+   }
 }

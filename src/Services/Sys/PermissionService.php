@@ -453,7 +453,8 @@ class PermissionService extends BaseService
       $query->orderBy($sortField, $sortOrder);
 
       // 获取分页数据
-      $data = $query->paginate($params['limit'] ?? 10);
+      $pageSize = $params['page_size'] ?? $this->getModel()->getPageSize();
+      $data = $query->paginate($pageSize);
       return $this->paginateFormat($data);
    }
 
@@ -508,7 +509,8 @@ class PermissionService extends BaseService
       }
 
       // 获取分页数据
-      $data = $query->paginate($params['limit'] ?? 10);
+      $pageSize = $params['page_size'] ?? $this->getModel()->getPageSize();
+      $data = $query->paginate($pageSize);
       return $this->paginateFormat($data);
    }
 }
