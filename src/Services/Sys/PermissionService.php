@@ -425,4 +425,90 @@ class PermissionService extends BaseService
       }
       return $user;
    }
+
+   /**
+    * 获取角色列表
+    * @param array $params 查询参数
+    *        - name: 角色名称（模糊搜索）
+    *        - slug: 角色标识（模糊搜索）
+    *        - limit: 每页数量
+    *        - sort_field: 排序字段
+    *        - sort_order: 排序方向 (asc|desc)
+    * @return array 分页后的角色列表数据
+    */
+   public function getRolesList(array $params): array
+   {
+      $query = Roles::query();
+
+      // 处理搜索条件
+      foreach (['name', 'slug'] as $field) {
+         if (!empty($params[$field])) {
+            $query->where($field, 'like', '%' . $params[$field] . '%');
+         }
+      }
+
+      // 处理排序
+      $sortField = $params['sort_field'] ?? 'created_at';
+      $sortOrder = $params['sort_order'] ?? 'desc';
+      $query->orderBy($sortField, $sortOrder);
+
+      // 获取分页数据
+      $data = $query->paginate($params['limit'] ?? 10);
+      return $this->paginateFormat($data);
+   }
+
+   /**
+    * 获取权限列表
+    * @param array $params 查询参数
+    *        - name: 权限名称（模糊搜索）
+    *        - group: 权限组（精确搜索）
+    *        - group_name: 权限组名称（精确搜索）
+    *        - method: 请求方法（精确搜索）
+    *        - uri: 请求路径（精确搜索）
+    *        - slug: 权限标识（精确搜索）
+    *        - prefix: 路由前缀（精确搜索）
+    *        - controller: 控制器名称（精确搜索）
+    *        - action: 方法名称（精确搜索）
+    * @return array 分页后的权限列表数据
+    */
+   public function getPermissionsList(array $params): array
+   {
+      $query = Permissions::query();
+
+      // 定义搜索条件映射
+      $searchFields = [
+         'name' => 'like',
+         'group' => 'exact',
+         'group_name' => 'exact',
+         'method' => 'exact',
+         'uri' => 'exact',
+         'slug' => 'exact',
+         'prefix' => 'exact',
+         'controller' => 'exact',
+         'action' => 'exact'
+      ];
+
+      // 处理普通搜索字段
+      foreach ($searchFields as $field => $type) {
+         if (!empty($params[$field])) {
+            $query->when($params[$field], function ($query) use ($field, $type, $params) {
+               return $type === 'like'
+                  ? $query->where($field, 'like', '%' . $params[$field] . '%')
+                  : $query->where($field, $params[$field]);
+            });
+         }
+      }
+
+      // 处理数值型字段
+      $numericFields = ['is_login', 'status'];
+      foreach ($numericFields as $field) {
+         if (isset($params[$field]) && is_numeric($params[$field])) {
+            $query->where($field, $params[$field]);
+         }
+      }
+
+      // 获取分页数据
+      $data = $query->paginate($params['limit'] ?? 10);
+      return $this->paginateFormat($data);
+   }
 }

@@ -48,6 +48,8 @@ Route::prefix($prefix)->group(function () {
             Route::post('revoke_permission_to',  'revokePermissionTo')->name('撤销用户的指定权限');
             Route::post('sync_permissions',  'syncPermissions')->name('同步用户权限');
             Route::post('give_permission_to',  'givePermissionTo')->name('给用户直接分配权限');
+            Route::post('get_permissions_list',  'getPermissionsList')->name('获取权限列表');
+            Route::post('get_roles_list',  'getRolesList')->name('获取角色列表');
         });
 
         // 日志

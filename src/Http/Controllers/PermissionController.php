@@ -176,4 +176,23 @@ class PermissionController extends BaseController
         $data = $this->service->addPermission();
         return $this->success($data);
     }
+    /**
+     * 获取角色列表
+     */
+    public function getRolesList(): JsonResponse
+    {
+        $params = $this->request->all();
+        $data = $this->service->getRolesList($params);
+        return $this->success($data);
+    }
+
+    /**
+     * 获取权限列表
+     */
+    public function getPermissionsList(): JsonResponse
+    {
+        $params = $this->request->all();
+        $data = $this->service->getPermissionsList($params);
+        return $this->success($data);
+    }
 }
