@@ -1228,12 +1228,19 @@ abstract class BaseService
      */
     protected function paginateFormat($data): array
     {
+
+        $pageSizeColumn = config('rap.paginate_columns.page_size', 'page_size');
+        $lastPageColumn = config('rap.paginate_columns.last_page', 'last_page');
+        $pageColumn = config('rap.paginate_columns.page', 'page');
+        $totalColumn = config('rap.paginate_columns.total', 'total');
+        $listColumn = config('rap.paginate_columns.list', 'list');
+
         return [
-            'list' => $data->items(),
-            'total' => $data->total(),
-            'current_page' => $data->currentPage(),
-            'last_page' => $data->lastPage(),
-            'per_page' => $data->perPage(),
+            $listColumn => $data->items(),
+            $totalColumn => $data->total(),
+            $pageColumn => $data->currentPage(),
+            $lastPageColumn => $data->lastPage(),
+            $pageSizeColumn => $data->perPage(),
         ];
     }
 

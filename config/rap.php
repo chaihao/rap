@@ -32,4 +32,12 @@ return [
             'table' => 'staff',
         ],
     ],
+    // 分页数据列名
+    'paginate_columns' => [
+        'page_size' => 'page_size', // 分页每页数量
+        'last_page' => 'last_page', // 最后一页
+        'page' => 'page', // 当前页
+        'total' => 'total', // 总数
+        'list' => 'list', // 列表
+    ],
 ];
