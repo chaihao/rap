@@ -36,6 +36,11 @@ class Staff extends Authenticatable implements JWTSubject
     protected string $cachePrefix = '';
 
     /**
+     * 默认分页大小
+     */
+    protected int $defaultPageSize = 20;
+
+    /**
      * 超级管理员
      */
     const IS_SUPPER_YES = 1;
@@ -181,5 +186,13 @@ class Staff extends Authenticatable implements JWTSubject
     public function verifyPassword(string $password): bool
     {
         return password_verify($password, $this->password);
+    }
+
+    /**
+     * 获取分页大小
+     */
+    public function getPageSize(): int
+    {
+        return $this->defaultPageSize;
     }
 }
