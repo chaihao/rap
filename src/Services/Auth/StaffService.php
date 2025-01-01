@@ -2,11 +2,13 @@
 
 namespace  Chaihao\Rap\Services\Auth;
 
-use Chaihao\Rap\Exception\ApiException;
-use Chaihao\Rap\Services\BaseService;
-use Chaihao\Rap\Models\Auth\Staff;
 use Carbon\Carbon;
+use Chaihao\Rap\Models\Auth\Staff;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Chaihao\Rap\Services\BaseService;
+use Chaihao\Rap\Exception\ApiException;
+use Chaihao\Rap\Facades\CurrentStaff;
+use Chaihao\Rap\Services\Sys\PermissionService;
 
 class StaffService extends BaseService
 {
@@ -118,7 +120,14 @@ class StaffService extends BaseService
     */
    public function editStaff(array $params)
    {
-      return $this->edit($params['id'], $params);
+      try {
+         if (isset($params['roles']) && !empty($params['roles'])) {
+            app(PermissionService::class)->assignRole(CurrentStaff::getId(), $params['roles']);
+         }
+         return $this->edit($params['id'], $params);
+      } catch (\Exception $e) {
+         throw ApiException::failed($e->getMessage());
+      }
    }
 
    /**

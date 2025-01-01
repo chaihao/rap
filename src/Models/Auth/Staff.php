@@ -39,7 +39,17 @@ class Staff extends Authenticatable implements JWTSubject
      * 默认分页大小
      */
     protected int $defaultPageSize = 20;
-
+    /**
+     * 是否记录操作者
+     */
+    protected bool $recordOperator = true;
+    /**
+     * 操作者字段
+     */
+    protected array $operatorFields = [
+        'creator' => 'created_by',
+        'updater' => 'updated_by'
+    ];
     /**
      * 超级管理员
      */
@@ -64,7 +74,7 @@ class Staff extends Authenticatable implements JWTSubject
         "email" => "nullable|email|string|max:255",
         "avatar" => "nullable|string|max:255",
         "ip" => "nullable|ip|string|max:16",
-        "last_login_at" => "nullable|datetime",
+        "last_login_at" => "nullable|date",
         "sex" => "nullable|integer|in:0,1,2",
         "is_super" => "nullable|integer|in:0,1",
         "remark" => "nullable|string|max:255",
@@ -115,6 +125,28 @@ class Staff extends Authenticatable implements JWTSubject
         ];
     }
 
+    /**
+     * 格式化输入数据
+     */
+    public function formatAttributes(array $attributes): array
+    {
+        return $attributes;
+    }
+
+    /**
+     * 是否记录操作者
+     */
+    public function shouldRecordOperator(): bool
+    {
+        return $this->recordOperator;
+    }
+    /**
+     * 获取操作者字段
+     */
+    public function getOperatorFields(): array
+    {
+        return $this->operatorFields;
+    }
     /**
      * 自定义列表展示字段
      */

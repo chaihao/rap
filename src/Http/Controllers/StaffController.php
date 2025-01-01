@@ -133,7 +133,7 @@ class StaffController extends BaseController
     public function addStaff(): JsonResponse
     {
         $params = $this->request->all();
-        $this->service->checkValidator($params, 'add');
+        $this->checkValidator($params, 'add');
         return $this->success($this->service->addStaff($this->request->all()));
     }
 
@@ -143,7 +143,7 @@ class StaffController extends BaseController
     public function editStaff(): JsonResponse
     {
         $params = $this->request->all();
-        $this->service->checkValidator($params, 'edit');
+        $this->checkValidator($params, 'edit');
         return $this->success($this->service->editStaff($this->request->all()));
     }
 
@@ -153,7 +153,7 @@ class StaffController extends BaseController
     public function deleteStaff(): JsonResponse
     {
         $params = $this->request->all();
-        $this->service->checkValidator($params, 'delete');
+        $this->checkValidator($params, 'delete');
         return $this->success($this->service->deleteStaff($this->request->all()));
     }
 
