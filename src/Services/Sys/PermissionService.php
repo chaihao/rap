@@ -222,7 +222,7 @@ class PermissionService extends BaseService
       return Permissions::select(['id', 'name', 'method', 'uri', 'slug', 'group', 'group_name'])
          ->orderBy('group')
          ->get()
-         ->groupBy('group')
+         ->groupBy('group_name')
          ->map(function ($permissions) {
             return [
                'group_name' => $permissions->first()->group_name,
