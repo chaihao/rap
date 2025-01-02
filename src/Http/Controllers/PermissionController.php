@@ -151,6 +151,25 @@ class PermissionController extends BaseController
         return $this->success($role, '角色创建成功');
     }
 
+    /**
+     * 更新角色
+     */
+    public function updateRole(): JsonResponse
+    {
+        $params = $this->request->all();
+        $this->checkValidator($params, [
+            'id' => 'required|integer',
+            'name' => 'required|string|unique:roles,name,' . $params['id'],
+            'guard_name' => 'string|nullable'
+        ], [
+            'id.required' => '角色ID不能为空',
+            'name.required' => '角色名称不能为空',
+            'name.unique' => '角色名称已存在',
+            'guard_name.string' => 'guard_name必须是字符串'
+        ]);
+        $role = $this->service->updateRole($params['id'], $params);
+        return $this->success($role, '角色更新成功');
+    }
 
     public function getRolePermissions(): JsonResponse
     {

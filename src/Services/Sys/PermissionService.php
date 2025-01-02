@@ -182,6 +182,22 @@ class PermissionService extends BaseService
       }
    }
 
+
+   /**
+    * 更新角色
+    */
+   public function updateRole($id, $data)
+   {
+      $role = Role::findOrFail($id);
+      $role->name = $data['name'];
+      $role->guard_name = $data['guard_name'] ?? config('rap.api.guard', 'api'); // 默认值为 'web'
+      $role->save();
+      return $role;
+   }
+
+
+
+
    /**
     * 获取角色的所有权限
     * @param int $roleId

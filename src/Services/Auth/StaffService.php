@@ -103,14 +103,18 @@ class StaffService extends BaseService
          'sex' => '0',
          'email' => '',
          'is_super' => 0,
-         'password' => '123456'
+         'password' => '12345678'
       ], $params);
 
       // 对密码进行加密处理
       $params['password'] = $this->model->encryptPassword($params['password']);
 
       // 直接调用父类的 add 方法
-      return $this->add($params);
+      $staff = $this->add($params, true);
+      if (isset($params['roles']) && !empty($params['roles'])) {
+         app(PermissionService::class)->assignRole($staff->id, $params['roles']);
+      }
+      return $staff;
    }
 
    /**

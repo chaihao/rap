@@ -38,6 +38,7 @@ Route::prefix($prefix)->group(function () {
             Route::post('add',  'addPermission')->name('添加权限');
             Route::post('get_all',  'getAllPermissions')->name('获取所有权限');
             Route::post('create_role',  'createRole')->name('创建角色');
+            Route::post('update_role',  'updateRole')->name('更新角色');
             Route::post('get_all_roles',  'getAllRoles')->name('获取所有角色');
             Route::post('assign_role',  'assignRole')->name('分配角色');
             Route::post('remove_role',  'removeRole')->name('移除角色');
