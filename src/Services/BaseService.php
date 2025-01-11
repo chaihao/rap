@@ -665,14 +665,10 @@ abstract class BaseService
      * 
      * @param int $id 记录ID
      * @param int|null $status 新状态，如果为null则切换当前状态
-     * @return array
      * @throws ApiException
      */
-    public function editStatus(int $id, ?int $status = null): array
+    public function editStatus(int $id, ?int $status = null): Model
     {
-        // 验证输入数据
-        // $this->checkValidator(['id' => $id], 'status');
-
         try {
             DB::beginTransaction();
 
@@ -687,7 +683,7 @@ abstract class BaseService
             $record->save();
 
             DB::commit();
-            return $this->message('状态更新成功');
+            return $record;
         } catch (ApiException $e) {
             DB::rollBack();
             throw $e;
@@ -790,7 +786,7 @@ abstract class BaseService
      * 
      * @param int $id 记录ID
      */
-    public function delete(int $id)
+    public function delete(int $id): bool
     {
         $record = $this->findRecord($id);
         if (!$record) {
@@ -798,10 +794,21 @@ abstract class BaseService
         }
 
         $record->delete();
-        return $this->message('删除成功');
+        return true;
     }
 
-
+    /**
+     * 批量删除
+     * 
+     * @param array $ids 记录ID数组
+     */
+    public function batchDelete(array $ids)
+    {
+        // 使用事务确保批量删除的原子性
+        return DB::transaction(function () use ($ids) {
+            return $this->getModel()->whereIn('id', $ids)->delete() > 0; // 返回是否有记录被删除
+        });
+    }
 
 
 

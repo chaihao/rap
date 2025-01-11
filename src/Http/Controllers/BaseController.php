@@ -103,6 +103,30 @@ abstract class BaseController extends Controller
     }
 
     /**
+     * 批量删除
+     */
+    public function batchDelete(): JsonResponse
+    {
+        try {
+            $params = $this->request->all();
+            if (empty($params['ids'])) {
+                throw new ApiException('ids不能为空', 400);
+            }
+            // 处理ids为数组
+            $params['ids'] = is_string($params['ids'])
+                ? array_filter(explode(',', str_replace(['，', ' ', '_'], ',', $params['ids'])))
+                : $params['ids'];
+
+            // 去除空值
+            $params['ids'] = array_filter($params['ids']);
+            $this->service->batchDelete($params['ids']);
+            return $this->success(null, '批量删除成功');
+        } catch (\Throwable $e) {
+            return $this->handleException($e);
+        }
+    }
+
+    /**
      * 详情接口
      */
     public function detail(int|null $id = null): JsonResponse
