@@ -116,14 +116,15 @@ class OperationLog extends BaseModel
     }
 
     /** 
-     * 详情关联关系
+     * 获取详情关联关系
+     * @return array
      */
     public function getWithRelation(): array
     {
         return ['staff'];
     }
     /**
-     * 列表关联关系
+     * 获取列表关联关系
      * @return array
      */
     public function listWithRelation(): array
