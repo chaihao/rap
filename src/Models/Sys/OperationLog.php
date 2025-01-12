@@ -46,7 +46,14 @@ class OperationLog extends BaseModel
         "created_by" => "integer",
         "created_by_platform" => "integer"
     ];
-
+    /**
+     * 获取创建人
+     */
+    public function staff()
+    {
+        return $this->belongsTo(config('rap.models.staff.class'), 'created_by', 'id')
+            ->select(['id', 'phone', 'name', 'email', 'avatar', 'is_super']);
+    }
     /**
      * 获取验证器错误信息
      */
@@ -106,5 +113,21 @@ class OperationLog extends BaseModel
     {
         $data = parent::formatOutput($data);
         return $data;
+    }
+
+    /** 
+     * 详情关联关系
+     */
+    public function getWithRelation(): array
+    {
+        return ['staff'];
+    }
+    /**
+     * 列表关联关系
+     * @return array
+     */
+    public function listWithRelation(): array
+    {
+        return ['staff'];
     }
 }
