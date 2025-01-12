@@ -2,11 +2,11 @@
 
 namespace Chaihao\Rap\Http\Middleware;
 
-use Chaihao\Rap\Models\Sys\OperationLog;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Chaihao\Rap\Facades\CurrentStaff;
+use Chaihao\Rap\Models\Sys\OperationLog;
 use Symfony\Component\HttpFoundation\Response;
 
 class RequestResponseLogger
@@ -44,15 +44,41 @@ class RequestResponseLogger
      */
     private function getRequestLog(Request $request): array
     {
+        // 排除密码字段
         $payload = $request->except(['password', 'password_confirmation']);
 
+        $payload['auth_staff'] = $this->getAuthStaff($payload);
         return [
             'method' => $request->method(),
             'url' => $request->fullUrl(),
             'ip' => $this->getClientIP(),
             'user_agent' => $request->userAgent(),
             'payload' => $payload,
+            'created_by' => CurrentStaff::getId(),
+            'created_by_platform' => 1,
         ];
+    }
+
+    /**
+     * 获取当前登录用户信息
+     *
+     * @param  array  $payload
+     * @return array
+     */
+    public function getAuthStaff(array $payload): array
+    {
+        if (empty($payload['auth_staff'])) {
+            return [];
+        }
+        $authStaff = [
+            'id' => $payload['auth_staff']['id'],
+            'phone' => $payload['auth_staff']['phone'],
+            'name' => $payload['auth_staff']['name'],
+            'email' => $payload['auth_staff']['email'],
+            'avatar' => $payload['auth_staff']['avatar'],
+            'is_super' => $payload['auth_staff']['is_super'],
+        ];
+        return $authStaff;
     }
 
     /**
@@ -161,7 +187,7 @@ class RequestResponseLogger
                 'payload' => $payload,
                 'response' => $responseLog['content'],
                 'name' => $actionName,
-                'created_by' => (int)($payload['created_by'] ?? 0),
+                'created_by' => CurrentStaff::getId(),
                 'created_by_platform' => (int)($payload['created_by_platform'] ?? 0),
             ]);
 
