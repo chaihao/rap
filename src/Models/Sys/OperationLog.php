@@ -67,7 +67,7 @@ class OperationLog extends BaseModel
     /**
      * 获取验证器自定义属性
      */
-    public function setValidatorAttributes(): array
+    public function getValidatorAttributes(): array
     {
         return [
             "method" => "请求方法",

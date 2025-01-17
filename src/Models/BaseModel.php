@@ -276,13 +276,6 @@ abstract class BaseModel extends Model
         return ['*'];
     }
 
-    /**
-     * 获取导出字段
-     */
-    public function getExportFields(): array
-    {
-        return $this->getListFields();
-    }
 
     /**
      * 获取分页大小

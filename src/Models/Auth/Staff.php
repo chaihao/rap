@@ -108,7 +108,7 @@ class Staff extends Authenticatable implements JWTSubject
     /**
      * 获取验证器自定义属性
      */
-    public function setValidatorAttributes(): array
+    public function getValidatorAttributes(): array
     {
         return [
             "phone" => "手机号",

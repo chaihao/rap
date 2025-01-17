@@ -27,7 +27,7 @@
         "laravel/framework": "^11.9",
         "spatie/laravel-permission": "^6.10",
         "tymon/jwt-auth": "^2.1",
-        "predis/predis": "^2.3"
-    },
-    "require-dev": {}
+        "predis/predis": "^2.3",
+        "maatwebsite/excel": "^3.1"
+    }
 }

@@ -2,7 +2,9 @@
 
 namespace Chaihao\Rap\Console\Commands;
 
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Console\GeneratorCommand;
+use Symfony\Component\Console\Input\InputOption;
 
 class MakeServices extends GeneratorCommand
 {
@@ -11,7 +13,7 @@ class MakeServices extends GeneratorCommand
      *
      * @var string
      */
-    protected $name = 'make:services';
+    protected $name = 'make:services [-m|--create-model] [-c|--create-controller]';
 
     /**
      * The console command description.
@@ -46,7 +48,17 @@ class MakeServices extends GeneratorCommand
     {
         return $rootNamespace . '\Services';
     }
-
+    /**
+     * 获取命令行选项
+     * @return array
+     */
+    protected function getOptions()
+    {
+        return [
+            ['create-model', 'm', InputOption::VALUE_OPTIONAL, '是否创建模型', true],
+            ['create-controller', 'c', InputOption::VALUE_OPTIONAL, '是否创建控制器', true],
+        ];
+    }
     /**
      * 设置类名和自定义替换内容
      * @param string $stub
@@ -67,7 +79,7 @@ class MakeServices extends GeneratorCommand
         }
 
         // 替换模板内容
-        return $this->replaceStubContent($stub, $serviceInfo, $name);
+        return $this->replaceStubModel($stub, $serviceInfo, $name);
     }
 
     /**
@@ -84,11 +96,8 @@ class MakeServices extends GeneratorCommand
         $serviceNameArray = explode('\\', $name);
         $serviceName = end($serviceNameArray);
 
-        // 验证服务名称格式
-        if (!str_ends_with($serviceName, 'Service')) {
-            $this->components->error('服务类名必须以 Service 结尾');
-            return false;
-        }
+        // 验证服务名称格式并确保以 'Service' 结尾
+        $serviceName = str_ends_with($serviceName, 'Service') ? $serviceName : $serviceName . 'Service';
 
         $path = $this->getServicePath($serviceNameArray);
         $modelName = str_replace('Service', '', $serviceName);
@@ -127,14 +136,18 @@ class MakeServices extends GeneratorCommand
     private function handleRelatedFiles($serviceInfo)
     {
         try {
-            if (config('rap.create_services.model', true) && !$this->handleModelFile($serviceInfo)) {
-                return false;
-            }
+            // 使用数组来存储需要处理的文件
+            $filesToHandle = [
+                'model' => $this->option('create-model'),
+                'controller' => $this->option('create-controller')
+            ];
 
-            if (config('rap.create_services.controller', true) && !$this->handleControllerFile($serviceInfo)) {
-                return false;
+            foreach ($filesToHandle as $type => $shouldHandle) {
+                if ($shouldHandle) {
+                    $method = 'handle' . ucfirst($type) . 'File';
+                    $this->$method($serviceInfo);
+                }
             }
-
             return true;
         } catch (\Exception $e) {
             $this->components->error("处理相关文件时发生错误：" . $e->getMessage());
@@ -150,11 +163,23 @@ class MakeServices extends GeneratorCommand
      * @param string $name 完整的类名
      * @return string 替换后的内容
      */
-    private function replaceStubContent($stub, $serviceInfo, $name)
+    private function replaceStubModel($stub, $serviceInfo, $name)
     {
-        $modelNamespace = 'App\\Models\\' . str_replace('\\\\', '\\', $serviceInfo['path']) . $serviceInfo['modelName'];
+        // 实例化 Filesystem
+        $filesystem = new Filesystem();
+        $files = $filesystem->allFiles(base_path() . '/app/Models');
 
-        $stub = str_replace('USED_DUMMY_MODEL', $modelNamespace, $stub);
+        // 检测目录下是否存在 $serviceInfo['modelName'] 文件名的文件
+        $modelFileName = $serviceInfo['modelName'] . '.php';
+        // 使用 array_filter 过滤出文件名匹配的文件
+        $matchedFiles = array_filter($files, fn($file) => $file->getFilename() === $modelFileName);
+        // 获取匹配文件的相对路径
+        $path = !empty($matchedFiles) ? str_replace(base_path(), '', reset($matchedFiles)->getRealPath()) : '';
+        // 将路径中的斜杠替换为反斜杠，并去除 app 和 .php 后缀
+        $path = str_replace(['/', '\\app', '.php'], ['\\', 'App', ''], $path);
+
+        // 替换模板内容
+        $stub = str_replace('USED_DUMMY_MODEL', $path ?: '', $stub);
         $stub = str_replace('DummyModel', $serviceInfo['modelName'], $stub);
 
         return parent::replaceClass($stub, $name);
@@ -180,31 +205,29 @@ class MakeServices extends GeneratorCommand
     private function handleModelFile($serviceInfo)
     {
         $modelPath = app_path('Models/' . $serviceInfo['path'] . $serviceInfo['modelName'] . '.php');
+        // if (!file_exists($modelPath)) {
+        $displayPath = str_replace('\\', '/', sprintf(
+            "Models/%s%s",
+            $serviceInfo['path'],
+            $serviceInfo['modelName']
+        ));
 
-        if (!file_exists($modelPath)) {
-            $displayPath = str_replace('\\', '/', sprintf(
-                "Models/%s%s",
-                $serviceInfo['path'],
-                $serviceInfo['modelName']
-            ));
+        $this->components->warn(sprintf("正在创建 Model [%s]...", $displayPath));
 
-            $this->components->warn(sprintf("正在创建 Model [%s]...", $displayPath));
+        // 处理模型名称，确保正确的目录分隔符
+        $modelName = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $serviceInfo['path']);
+        $modelName = trim($modelName, DIRECTORY_SEPARATOR);
+        $modelName = $modelName ? $modelName . DIRECTORY_SEPARATOR . $serviceInfo['modelName'] : $serviceInfo['modelName'];
 
-            // 处理模型名称，确保正确的目录分隔符
-            $modelName = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $serviceInfo['path']);
-            $modelName = trim($modelName, DIRECTORY_SEPARATOR);
-            $modelName = $modelName ? $modelName . DIRECTORY_SEPARATOR . $serviceInfo['modelName'] : $serviceInfo['modelName'];
-
-            try {
-                $this->call('make:model', [
-                    'name' => $modelName,
-                ]);
-            } catch (\Exception $e) {
-                $this->components->error("创建 Model 失败：" . $e->getMessage());
-                return false;
-            }
+        try {
+            $this->call('make:model', [
+                'name' => $modelName,
+            ]);
+        } catch (\Exception $e) {
+            $this->components->error("创建 Model 失败：" . $e->getMessage());
+            return false;
         }
-
+        // }
         return true;
     }
 
@@ -216,31 +239,31 @@ class MakeServices extends GeneratorCommand
     private function handleControllerFile($serviceInfo)
     {
         // 获取并格式化版本号
-        $version = $this->formatVersionPath(config('rap.controller.version',''));
+        $version = $this->formatVersionPath(config('rap.controller.version', ''));
 
         // 构建控制器信息
         $controllerInfo = $this->buildControllerInfo($serviceInfo, $version);
 
         // 如果控制器不存在，则创建
-        if (!file_exists($controllerInfo['path'])) {
-            $displayPath = str_replace('\\', '/', sprintf(
-                "Http/Controllers/%s%s%s",
-                $version,
-                $controllerInfo['directory'],
-                $controllerInfo['name']
-            ));
+        // if (!file_exists($controllerInfo['path'])) {
+        $displayPath = str_replace('\\', '/', sprintf(
+            "Http/Controllers/%s%s%s",
+            $version,
+            $controllerInfo['directory'],
+            $controllerInfo['name']
+        ));
 
-            $this->components->warn(sprintf("正在创建 Controller [%s]...", $displayPath));
+        $this->components->warn(sprintf("正在创建 Controller [%s]...", $displayPath));
 
-            try {
-                $this->call('make:controller', [
-                    'name' => $controllerInfo['fullName']
-                ]);
-            } catch (\Exception $e) {
-                $this->components->error("创建 Controller 失败：" . $e->getMessage());
-                return false;
-            }
+        try {
+            $this->call('make:controller', [
+                'name' => $controllerInfo['fullName']
+            ]);
+        } catch (\Exception $e) {
+            $this->components->error("创建 Controller 失败：" . $e->getMessage());
+            return false;
         }
+        // }
 
         return true;
     }
@@ -289,12 +312,13 @@ class MakeServices extends GeneratorCommand
     {
         try {
             $name = $this->qualifyClass($this->getNameInput());
+            // 验证服务名称格式
+            $name = str_ends_with($name, 'Service') ? $name : $name . 'Service';
+            // 获取服务类路径
             $path = $this->getPath($name);
-
-            if ($this->alreadyExists($this->getNameInput())) {
-                if (!$this->confirmOverwrite()) {
-                    return 1;
-                }
+            // 如果文件已存在,提示是否覆盖
+            if ($this->alreadyExists($name) && !$this->confirmOverwrite()) {
+                return 1;
             }
 
             $this->makeDirectory($path);

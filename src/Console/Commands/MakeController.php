@@ -2,6 +2,7 @@
 
 namespace Chaihao\Rap\Console\Commands;
 
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Console\GeneratorCommand;
 
 class MakeController extends GeneratorCommand
@@ -85,8 +86,8 @@ class MakeController extends GeneratorCommand
         $serviceName = str_replace('Controller', 'Service', $name);
 
         // 获取命名空间并设置替换规则
-        $replacements['USED_DUMMY_MODEL'] = $this->getNamespaceReplacement($modelName);
-        $replacements['USED_DUMMY_SERVICE'] = $this->getNamespaceReplacement($serviceName);
+        $replacements['USED_DUMMY_MODEL'] = $this->getNamespaceReplacement($modelName, 'Models');
+        $replacements['USED_DUMMY_SERVICE'] = $this->getNamespaceReplacement($serviceName, 'Services');
 
         // 批量执行替换
         return str_replace(
@@ -107,9 +108,9 @@ class MakeController extends GeneratorCommand
     /**
      * 获取命名空间替换内容
      */
-    private function getNamespaceReplacement(string $name): string
+    private function getNamespaceReplacement(string $name, string $type): string
     {
-        $namespace = $this->findClassNamespace($name);
+        $namespace = $this->findClassNamespace($name, $type);
         return $namespace ? 'use ' . $namespace . ';' : '';
     }
 
@@ -223,37 +224,33 @@ class MakeController extends GeneratorCommand
      * 根据类名查找对应的命名空间
      * 支持 Model 和 Service 的自动查找
      * @param string $className
-     * @param array $namespaces
+     * @param array $type
      * @return string|null
      */
-    private function findClassNamespace($className, array $namespaces = []): ?string
+    private function findClassNamespace($className, string $type = 'Models'): string
     {
         $className = $this->normalizeClassName($className);
 
-        // 从配置中获取基础命名空间
-        $baseNamespaces = config('rap.namespaces', [
-            'App\\Models\\',
-            'App\\Services\\',
-            'App\\Http\\Controllers\\',
-        ]);
-
-        $searchNamespaces = array_merge($baseNamespaces, $namespaces);
-
-        // 只有在查找 Model 和 Service 时才移除版本号
-        if (str_contains($className, 'Service') || !str_contains($className, 'Controller')) {
-            $version = config('rap.controller.version', '');
-            if ($version) {
-                $className = $this->removeVersionFromClassName($className, $version);
-            }
+        $version = config('rap.controller.version', '');
+        if ($version) {
+            $className = $this->removeVersionFromClassName($className, $version);
         }
+        // 实例化 Filesystem
+        $filesystem = new Filesystem();
+        $files = $filesystem->allFiles(base_path() . '/app/' . $type);
 
-        if (class_exists($className)) {
-            return $className;
+        // 检测目录下是否存在 $serviceInfo['modelName'] 文件名的文件
+        $modelFileName = $className . '.php';
+
+        // 使用 array_filter 优化文件查找
+        $matchedFiles = array_filter($files, fn($file) => $file->getFilename() === $modelFileName);
+
+        if ($matchedFiles) {
+            $path = str_replace(base_path(), '', reset($matchedFiles)->getRealPath()); // 返回相对路径
+            return str_replace(['/', '\\app', '.php'], ['\\', 'App', ''], $path);
         }
-
-        return $this->searchInNamespaces($className, $searchNamespaces);
+        return '';
     }
-
     /**
      * 从类名中移除版本号
      */
@@ -262,21 +259,6 @@ class MakeController extends GeneratorCommand
         $normalizedVersion = trim($version, '\\/') . '\\';
         return str_replace($normalizedVersion, '', $className);
     }
-
-    /**
-     * 在命名空间中搜索类
-     */
-    private function searchInNamespaces(string $className, array $namespaces): ?string
-    {
-        foreach ($namespaces as $namespace) {
-            $fullClassName = $namespace . $className;
-            if ($this->isValidClass($fullClassName, $className)) {
-                return $fullClassName;
-            }
-        }
-        return null;
-    }
-
     /**
      * 标准化类名
      */

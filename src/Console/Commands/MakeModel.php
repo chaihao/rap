@@ -30,6 +30,10 @@ class MakeModel extends GeneratorCommand
     const TIMESTAMP_FIELDS = ['created_at', 'updated_at', 'deleted_at'];
 
     /**
+     * 过滤字段
+     */
+    const FILTER_FIELDS = ['deleted_at'];
+    /**
      * 获取stub文件路径
      */
     protected function getStub()
@@ -217,7 +221,7 @@ class MakeModel extends GeneratorCommand
             $rules = [];
             $fillable = [];
             $casts = [];
-            $setValidatorAttributes = [];
+            $getValidatorAttributes = [];
             $scenarioFields = [
                 'add' => [],
                 'edit' => []
@@ -226,9 +230,10 @@ class MakeModel extends GeneratorCommand
             foreach ($list as $item) {
                 // 添加可填充字段
                 $fillable[] = $item->Field;
-                // 添加验证器属性
-                if ($item->Comment) {
-                    $setValidatorAttributes[$item->Field] = $item->Comment;
+
+                if (!in_array($item->Field, self::FILTER_FIELDS)) {
+                    // 添加验证器属性
+                    $getValidatorAttributes[$item->Field] = $item->Comment ?: $this->getValidatorAttributes($item->Field);
                 }
 
                 // 跳过id字段 和 时间戳字段
@@ -275,7 +280,7 @@ class MakeModel extends GeneratorCommand
             // 添加场景
             $stub = str_replace('SCENARIOS', $this->scenariosToString($scenarios), $stub);
             // 添加验证器自定义属性
-            $stub = str_replace('SET_VALIDATOR_ATTRIBUTES', $this->arrayToString($setValidatorAttributes), $stub);
+            $stub = str_replace('SET_VALIDATOR_ATTRIBUTES', $this->arrayToString($getValidatorAttributes), $stub);
             // 添加软删除
             if (in_array('deleted_at', $fillable)) {
                 $stub = $this->addSoftDeletes($stub);
@@ -290,6 +295,15 @@ class MakeModel extends GeneratorCommand
         } catch (\Exception $e) {
             return str_replace(['RULES', 'SCENARIOS'], '', $stub);
         }
+    }
+
+    /**
+     * 获取验证器自定义属性
+     */
+    public function getValidatorAttributes($field)
+    {
+        $explode = explode('_', $field);
+        return implode(' ', array_map('ucfirst', $explode));
     }
 
     /**

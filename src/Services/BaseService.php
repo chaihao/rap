@@ -1076,8 +1076,8 @@ abstract class BaseService
      */
     public function getValidatorAttributes(): array
     {
-        if (method_exists($this->getModel(), 'setValidatorAttributes')) {
-            return $this->getModel()->setValidatorAttributes();
+        if (method_exists($this->getModel(), 'getValidatorAttributes')) {
+            return $this->getModel()->getValidatorAttributes();
         }
         return [];
     }
