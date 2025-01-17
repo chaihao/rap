@@ -80,11 +80,10 @@ class MakeExportServices extends GeneratorCommand
         $serviceNameArray = explode('\\', $name);
         $serviceName = end($serviceNameArray);
 
-        // 验证服务名称格式并确保以 'Service' 结尾
-        $serviceName = str_ends_with($serviceName, 'Service') ? $serviceName : $serviceName . 'Service';
-
+        // 验证服务名称格式并确保以 'ExportService' 结尾
+        $serviceName = $this->getModelName($serviceName);
         $path = $this->getServicePath($serviceNameArray);
-        $modelName = str_replace('Service', '', $serviceName);
+        $modelName = str_replace('ExportService', '', $serviceName);
 
         return compact('serviceName', 'path', 'modelName');
     }
@@ -134,14 +133,12 @@ class MakeExportServices extends GeneratorCommand
         $matchedFiles = array_filter($files, function ($file) use ($modelFileName) {
             return $file->getFilename() === $modelFileName;
         });
-
         if (!empty($matchedFiles)) {
             $path = str_replace(base_path(), '', reset($matchedFiles)->getRealPath()); // 返回相对路径
             $path = str_replace(['/', '\\app', '.php'], ['\\', 'App', ''], $path);
         }
-
         // 替换模板内容
-        $stub = str_replace('USED_DUMMY_MODEL', $path ?: '', $stub);
+        $stub = str_replace('USED_DUMMY_MODEL', $path ? 'use ' . $path . ';' : '', $stub);
         $stub = str_replace('DummyModel', $serviceInfo['modelName'], $stub);
 
         return parent::replaceClass($stub, $name);
@@ -160,6 +157,21 @@ class MakeExportServices extends GeneratorCommand
     }
 
     /**
+     * 获取模型名称
+     * @param string $name 完整的类名
+     * @return string 模型名称
+     */
+    public function getModelName($name)
+    {
+        $nameParts = explode('\\', $name);
+        $endName = end($nameParts);
+        // 优化：直接使用正则表达式替换
+        $endName = preg_replace('/(Export|Service|ExportService)$/', '', $endName) . 'ExportService';
+        $nameParts[count($nameParts) - 1] = $endName;
+        return implode('\\', $nameParts);
+    }
+
+    /**
      * 执行命令
      */
     public function handle()
@@ -168,11 +180,9 @@ class MakeExportServices extends GeneratorCommand
             // 获取Services类名
             $name = $this->qualifyClass($this->getNameInput());
             // 验证服务名称格式
-            $name = str_ends_with($name, 'Service') ? $name : $name . 'Service';
-
+            $name = $this->getModelName($name);
             // 获取服务类路径
             $path = $this->getPath($name);
-
             // 如果文件已存在,提示是否覆盖
             if ($this->alreadyExists($name) && !$this->confirmOverwrite()) {
                 return 1;

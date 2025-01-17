@@ -4,7 +4,7 @@ namespace DummyNamespace;
 
 use Chaihao\Rap\Services\BaseService;
 use Chaihao\Rap\Exception\ApiException;
-use USED_DUMMY_MODEL;
+USED_DUMMY_MODEL
 
 class DummyClass extends BaseService
 {

@@ -179,7 +179,7 @@ class MakeServices extends GeneratorCommand
         $path = str_replace(['/', '\\app', '.php'], ['\\', 'App', ''], $path);
 
         // 替换模板内容
-        $stub = str_replace('USED_DUMMY_MODEL', $path ?: '', $stub);
+        $stub = str_replace('USED_DUMMY_MODEL', $path ? 'use ' . $path . ';' : '', $stub);
         $stub = str_replace('DummyModel', $serviceInfo['modelName'], $stub);
 
         return parent::replaceClass($stub, $name);

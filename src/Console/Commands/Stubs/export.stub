@@ -5,7 +5,7 @@ namespace DummyNamespace;
 use Chaihao\Rap\Services\Export\BaseExportService;
 use Chaihao\Rap\Exception\ApiException;
 use Illuminate\Database\Eloquent\Model;
-use USED_DUMMY_MODEL;
+USED_DUMMY_MODEL
 
 class DummyClass extends BaseExportService
 {
