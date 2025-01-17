@@ -2,18 +2,27 @@
 
 namespace Chaihao\Rap\Services\Export;
 
+use Carbon\Carbon;
+use Maatwebsite\Excel\Excel;
+use Chaihao\Rap\Job\ExportJob;
+use Illuminate\Http\JsonResponse;
+use Chaihao\Rap\Facades\CurrentStaff;
 use Chaihao\Rap\Services\BaseService;
+use Illuminate\Support\Facades\Redis;
 use Chaihao\Rap\Exception\ApiException;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\Builder;
+use Maatwebsite\Excel\Concerns\Exportable;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 
 abstract class BaseExportService extends BaseService implements FromCollection, WithColumnFormatting, WithHeadings, WithMapping, WithCustomCsvSettings
 {
+    use Exportable;
 
     public $exportColumns;
     public $keyColumn;
@@ -171,5 +180,64 @@ abstract class BaseExportService extends BaseService implements FromCollection, 
             'use_bom' => true, // 是否使用BOM
             'output_encoding' => 'UTF-8', // 输出编码
         ];
+    }
+
+
+    /**
+     * @Author: chaihao
+     * @description: 导出excel
+     */
+    public function export($params)
+    {
+        if (CurrentStaff::isAdmin()) {
+            // 管理员最大管理数限制
+            $exportNum = 50000; // 设置导出数量上限
+            $count = $this->filterQuery($params)->count(); // 获取符合条件的记录数
+            if ($count > $exportNum) {
+                throw new ApiException('导出数量上限 ' . $exportNum . ' 条 '); // 超过上限抛出异常
+            }
+        }
+        if (empty($params['ids'])) {
+            $result =  $this->asynchronousExport($params); // 调用异步导出方法
+            if ($result['status']) {
+                return $this->success('开始导出'); // 返回成功信息
+            } else {
+                throw new ApiException($result['msg']); // 返回错误信息
+            }
+        } else {
+            $filename = now()->format('YmdHis') . '.csv'; // 生成文件名
+            $this->store($filename, 'public', Excel::CSV); // 存储CSV文件
+            return $this->success(Storage::disk('public')->url($filename)); // 返回文件URL
+        }
+    }
+
+    /**
+     * @Author: chaihao
+     * @description: 异步导出
+     */
+    public function asynchronousExport($params)
+    {
+        try {
+            $redisKey = 'AsynchronousExportRedisKey' . $this->getModel()->getTable(); // Redis键名
+            if (Redis::exists($redisKey)) {
+                throw new ApiException("正在导出数据, 请稍后..."); // 检查是否已有导出任务
+            }
+            $limit = 10000; // 每次导出的记录数限制
+            $count = $this->filterQuery($params)->count(); // 获取符合条件的记录数
+            if ($count <= 0) {
+                throw new ApiException("数据过滤结果为空,不执行导出操作"); // 记录数为零时抛出异常
+            }
+            $totalPage = ceil($count / $limit); // 计算总页数
+            $fileName  = uniqid(now()->format('YmdHis')); // 生成唯一文件名
+            for ($i = 0; $i < $totalPage; $i++) {
+                if ($i == 0) {
+                    Redis::setex($redisKey, $totalPage * 20, $fileName); // 设置Redis过期时间
+                }
+                ExportJob::dispatch($this, $fileName, $params, $i, $totalPage)->delay(Carbon::now()->addSeconds($i * 5)); // 调度导出任务
+            }
+            return ['status' => true, 'msg' => '开始导出']; // 返回导出开始状态
+        } catch (ApiException $e) {
+            throw new ApiException($e->getMessage()); // 捕获异常并抛出
+        }
     }
 }
