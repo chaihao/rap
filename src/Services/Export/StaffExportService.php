@@ -4,18 +4,15 @@ namespace Chaihao\Rap\Services\Export;
 
 use Chaihao\Rap\Models\Auth\Staff;
 use Chaihao\Rap\Exception\ApiException;
-use Illuminate\Database\Eloquent\Model;
 use Chaihao\Rap\Services\Export\BaseExportService;
 
 
 class StaffExportService extends BaseExportService
 {
-    /**
-     * 初始化模型
-     */
-    protected function initModel(): Model
+    public function __construct(Staff $model)
     {
-        return app(Staff::class);
+        parent::__construct();
+        $this->setModel($model);
     }
 
     /**

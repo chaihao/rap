@@ -5,8 +5,6 @@ namespace Chaihao\Rap\Services\Export;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Excel;
 use Chaihao\Rap\Job\ExportJob;
-use Illuminate\Http\JsonResponse;
-use Chaihao\Rap\Facades\CurrentStaff;
 use Chaihao\Rap\Services\BaseService;
 use Illuminate\Support\Facades\Redis;
 use Chaihao\Rap\Exception\ApiException;
@@ -20,7 +18,7 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
 
-abstract class BaseExportService extends BaseService implements FromCollection, WithColumnFormatting, WithHeadings, WithMapping, WithCustomCsvSettings
+class BaseExportService extends BaseService implements FromCollection, WithColumnFormatting, WithHeadings, WithMapping, WithCustomCsvSettings
 {
     use Exportable;
 
@@ -35,21 +33,16 @@ abstract class BaseExportService extends BaseService implements FromCollection, 
     /**
      * 初始化服务
      */
-    public function __construct(array $params)
+    public function __construct()
     {
         $this->exportColumns = $this->getExportFields();
-        $this->params = $params;
+        $this->params = request()->all();
         $this->page = $params['page'] ?? 1;
         $this->limit = $params['page_size'] ?? 10000;
         $this->column = $params['column'] ?? [];
         $this->sortColumn = $params['sort_field'] ?? 'id';
         $this->sortType = $params['sort_type'] ?? 'desc';
-        $this->setModel($this->initModel());
     }
-    /**
-     * 初始化模型
-     */
-    abstract protected function initModel(): Model;
 
     /**
      * 获取导出字段
