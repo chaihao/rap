@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Export;
+namespace Chaihao\Rap\Services\Export;
 
 use Chaihao\Rap\Models\Auth\Staff;
 use Chaihao\Rap\Exception\ApiException;

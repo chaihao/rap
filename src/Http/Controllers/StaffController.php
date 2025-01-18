@@ -7,7 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Chaihao\Rap\Models\Auth\Staff;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Chaihao\Rap\Exception\ApiException;
-use App\Services\Export\StaffExportService;
+use Chaihao\Rap\Services\Export\StaffExportService;
 use Chaihao\Rap\Services\Auth\StaffService;
 use Chaihao\Rap\Services\Sys\PermissionService;
 use Chaihao\Rap\Http\Controllers\BaseController;
