@@ -30,6 +30,8 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
     public $column;
     public $sortColumn;
     public $sortType;
+    protected string $filePathSuffix = 'export/';
+
     /**
      * 初始化服务
      */
@@ -125,13 +127,13 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
     /**
      * 自定义列格式化
      */
-    public function customColumnFormats($column = ''): string
+    public function customColumnFormats($column = ''): array
     {
         $formats = [
             'is_super' => [0 => '否', 1 => '是'],
             'status' => [0 => '禁用', 1 => '启用'],
         ];
-        return $formats[$column] ?? '';
+        return $formats[$column] ?? [];
     }
     /**
      * 映射名称
@@ -185,7 +187,10 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
      */
     public function export($params)
     {
-        if (empty($params['ids'])) {
+
+        $count = $this->filterQuery($params)->count();
+
+        if (empty($params['ids']) && $count > 10000) {
             $result =  $this->asynchronousExport($params); // 调用异步导出方法
             if ($result['status']) {
                 return '开始导出'; // 返回成功信息
@@ -193,7 +198,8 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
                 throw new ApiException($result['msg']); // 返回错误信息
             }
         } else {
-            $filename = now()->format('YmdHis') . '.csv'; // 生成文件名
+            $filename = $this->filePathSuffix . now()->format('YmdHis') . '.csv'; // 生成文件名
+
             $this->store($filename, 'public', Excel::CSV); // 存储CSV文件
             return Storage::disk('public')->url($filename); // 返回文件URL
         }
@@ -212,6 +218,7 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
             }
             $limit = 10000; // 每次导出的记录数限制
             $count = $this->filterQuery($params)->count(); // 获取符合条件的记录数
+
             if ($count <= 0) {
                 throw new ApiException("数据过滤结果为空,不执行导出操作"); // 记录数为零时抛出异常
             }

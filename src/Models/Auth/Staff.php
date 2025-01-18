@@ -1,6 +1,6 @@
 <?php
 
-namespace  Chaihao\Rap\Models\Auth;
+namespace Chaihao\Rap\Models\Auth;
 
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -50,6 +50,14 @@ class Staff extends Authenticatable implements JWTSubject
         'creator' => 'created_by',
         'updater' => 'updated_by'
     ];
+    /**
+     * 默认排序字段
+     */
+    protected string $defaultOrderField = 'id';
+    /**
+     * 默认排序方式
+     */
+    protected string $defaultOrderDirection = 'desc';
     /**
      * 超级管理员
      */
@@ -152,7 +160,7 @@ class Staff extends Authenticatable implements JWTSubject
      */
     public function getListFields(): array
     {
-        return array_merge(parent::getListFields(), [
+        return array_merge($this->fillable, [
             // 在此添加额外的列表字段
         ]);
     }
@@ -164,7 +172,21 @@ class Staff extends Authenticatable implements JWTSubject
     {
         return parent::getDetailFields();
     }
+    /**
+     * 获取默认排序字段
+     */
+    public function getDefaultOrderField(): string
+    {
+        return $this->defaultOrderField;
+    }
 
+    /**
+     * 获取默认排序方向
+     */
+    public function getDefaultOrderDirection(): string
+    {
+        return $this->defaultOrderDirection;
+    }
     /**
      * 格式化输出
      */

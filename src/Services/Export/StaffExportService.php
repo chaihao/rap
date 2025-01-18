@@ -11,8 +11,8 @@ class StaffExportService extends BaseExportService
 {
     public function __construct(Staff $model)
     {
-        parent::__construct();
         $this->setModel($model);
+        parent::__construct();
     }
 
     /**
@@ -28,7 +28,7 @@ class StaffExportService extends BaseExportService
     /**
      * 自定义列格式化
      */
-    public function customColumnFormats($column = ''): string
+    public function customColumnFormats($column = ''): array
     {
         $result = parent::customColumnFormats($column);
         return $result;
