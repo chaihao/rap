@@ -18,6 +18,7 @@ abstract class BaseController extends Controller
     protected $response;
     protected $service;
     protected $model;
+    protected $exportService;
 
     public function __construct(Request $request)
     {
@@ -146,6 +147,19 @@ abstract class BaseController extends Controller
         }
     }
 
+    /**
+     * 导出接口
+     */
+    public function export()
+    {
+        try {
+            $params = $this->request->all();
+            $result = $this->exportService->export($params);
+            return $this->success($result);
+        } catch (\Throwable $e) {
+            return $this->handleException($e);
+        }
+    }
     /**
      * 获取验证后的参数
      */

@@ -2,14 +2,15 @@
 
 namespace Chaihao\Rap\Http\Controllers;
 
-use Chaihao\Rap\Exception\ApiException;
-use Chaihao\Rap\Http\Controllers\BaseController;
-use Chaihao\Rap\Models\Auth\Staff;
-use Chaihao\Rap\Services\Auth\StaffService;
 use Carbon\Carbon;
-use Chaihao\Rap\Services\Sys\PermissionService;
 use Illuminate\Http\JsonResponse;
+use Chaihao\Rap\Models\Auth\Staff;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Chaihao\Rap\Exception\ApiException;
+use App\Services\Export\StaffExportService;
+use Chaihao\Rap\Services\Auth\StaffService;
+use Chaihao\Rap\Services\Sys\PermissionService;
+use Chaihao\Rap\Http\Controllers\BaseController;
 
 class StaffController extends BaseController
 {
@@ -17,6 +18,7 @@ class StaffController extends BaseController
     {
         $this->service = app(StaffService::class);
         $this->model = app(Staff::class);
+        $this->exportService = app(StaffExportService::class);
     }
 
     /**

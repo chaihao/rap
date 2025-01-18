@@ -189,25 +189,17 @@ abstract class BaseExportService extends BaseService implements FromCollection, 
      */
     public function export($params)
     {
-        if (CurrentStaff::isAdmin()) {
-            // 管理员最大管理数限制
-            $exportNum = 50000; // 设置导出数量上限
-            $count = $this->filterQuery($params)->count(); // 获取符合条件的记录数
-            if ($count > $exportNum) {
-                throw new ApiException('导出数量上限 ' . $exportNum . ' 条 '); // 超过上限抛出异常
-            }
-        }
         if (empty($params['ids'])) {
             $result =  $this->asynchronousExport($params); // 调用异步导出方法
             if ($result['status']) {
-                return $this->success('开始导出'); // 返回成功信息
+                return '开始导出'; // 返回成功信息
             } else {
                 throw new ApiException($result['msg']); // 返回错误信息
             }
         } else {
             $filename = now()->format('YmdHis') . '.csv'; // 生成文件名
             $this->store($filename, 'public', Excel::CSV); // 存储CSV文件
-            return $this->success(Storage::disk('public')->url($filename)); // 返回文件URL
+            return Storage::disk('public')->url($filename); // 返回文件URL
         }
     }
 
