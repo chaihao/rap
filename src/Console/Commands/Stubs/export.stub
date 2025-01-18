@@ -9,12 +9,10 @@ USED_DUMMY_MODEL
 
 class DummyClass extends BaseExportService
 {
-    /**
-     * 初始化模型
-     */
-    protected function initModel(): Model
+    public function __construct(DummyModel $model)
     {
-        return app(DummyModel::class);
+        $this->setModel($model);
+        parent::__construct();
     }
 
     /**
@@ -22,15 +20,17 @@ class DummyClass extends BaseExportService
      */
     public function getExportFields(): array
     {
-        return parent::getExportFields();
+        $fields = parent::getExportFields();
+        return $fields;
     }
 
     /**
      * 自定义列格式化
      */
-    public function customColumnFormats($column = ''): string
+    public function customColumnFormats($column = ''): array
     {
-        return parent::customColumnFormats($column);
+        $result = parent::customColumnFormats($column);
+        return $result;
     }
 }
     

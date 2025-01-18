@@ -26,7 +26,6 @@ class ExportJob implements ShouldQueue
     protected $fileName;
     protected $params;
     protected $totalPage;
-    protected string $filePathSuffix = 'export/';
     protected $model;
     protected $page;
     public function __construct($model, $fileName,  $params, $page, int $totalPage)
@@ -47,24 +46,27 @@ class ExportJob implements ShouldQueue
     {
         try {
             ini_set('memory_limit', '512M');
-            $filename = $this->filePathSuffix . $this->fileName . '_' . ($this->page + 1) . '.csv';
+            $filename = basename($this->fileName) . '_' . ($this->page + 1) . '.csv';
             $this->model->store($filename, 'public', Excel::CSV);
             Redis::incr($this->fileName);
 
             if (Redis::get($this->fileName) == ($this->totalPage + 1)) {
+                $baseName = basename($this->fileName);
                 // 文件绝对路径
-                $zip_file = Storage::disk('public')->path($this->filePathSuffix . $this->fileName) . '.zip';
+                $zip_file = Storage::disk('public')->path($baseName . '.zip');
                 $zip = new ZipArchive();
                 $zip->open($zip_file, ZipArchive::CREATE | ZipArchive::OVERWRITE);
                 for ($i = 1; $i <= ($this->totalPage + 1); $i++) {
                     // 将 .csv 文件添加至 .zip 文件
-                    $value = $this->filePathSuffix . $this->fileName . '_' . $i . '.csv';
-                    $zip->addFile(Storage::disk('public')->path($value), $value);
+                    $csvFile = $baseName . '_' . $i . '.csv';
+                    if (Storage::disk('public')->exists($csvFile)) {
+                        $zip->addFile(Storage::disk('public')->path($csvFile), $csvFile);
+                    }
                 }
                 $zip->close();
-                $fileExportName = $this->fileName . '.zip';
 
-                $downloadUrl = Storage::disk('public')->url($this->filePathSuffix . $fileExportName);
+                // $downloadUrl = rtrim(env('APP_URL'), '/') . Storage::url($baseName . '.zip'); // 返回文件URL
+                $downloadUrl = asset('storage/' . $baseName . '.zip');
                 // 记录下载链接到日志
                 Log::info('下载链接: ' . $downloadUrl);
                 // 删除导出限制

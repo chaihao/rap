@@ -30,7 +30,11 @@ class StaffExportService extends BaseExportService
      */
     public function customColumnFormats($column = ''): array
     {
-        $result = parent::customColumnFormats($column);
-        return $result;
+        $formats = [
+            'is_super' => [0 => '否', 1 => '是'],
+            'status' => [0 => '禁用', 1 => '启用'],
+            'sex' => [0 => '未知', 1 => '男', 2 => '女'],
+        ];
+        return $formats[$column] ?? [];
     }
 }

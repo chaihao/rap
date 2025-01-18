@@ -201,7 +201,8 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
             $filename = $this->filePathSuffix . now()->format('YmdHis') . '.csv'; // 生成文件名
 
             $this->store($filename, 'public', Excel::CSV); // 存储CSV文件
-            return Storage::disk('public')->url($filename); // 返回文件URL
+            // return rtrim(env('APP_URL'), '/') . Storage::url($filename); // 返回文件URL
+            return asset('storage/' . $filename); // 返回文件URL
         }
     }
 
@@ -223,14 +224,14 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
                 throw new ApiException("数据过滤结果为空,不执行导出操作"); // 记录数为零时抛出异常
             }
             $totalPage = ceil($count / $limit); // 计算总页数
-            $fileName  = uniqid(now()->format('YmdHis')); // 生成唯一文件名
+            $fileName  = $this->filePathSuffix . uniqid(now()->format('YmdHis')); // 生成唯一文件名
             for ($i = 0; $i < $totalPage; $i++) {
                 if ($i == 0) {
                     Redis::setex($redisKey, $totalPage * 20, $fileName); // 设置Redis过期时间
                 }
                 ExportJob::dispatch($this, $fileName, $params, $i, $totalPage)->delay(Carbon::now()->addSeconds($i * 5)); // 调度导出任务
             }
-            return ['status' => true, 'msg' => '开始导出']; // 返回导出开始状态
+            return ['status' => true, 'msg' => '开始导出', 'fileName' => $fileName]; // 返回导出开始状态
         } catch (ApiException $e) {
             throw new ApiException($e->getMessage()); // 捕获异常并抛出
         }
