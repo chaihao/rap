@@ -23,7 +23,9 @@ class StaffExportService extends BaseExportService
      */
     public function getExportFields(): array
     {
-        return parent::getExportFields();
+        $fields = parent::getExportFields();
+        unset($fields['password']);
+        return $fields;
     }
 
     /**
@@ -31,7 +33,7 @@ class StaffExportService extends BaseExportService
      */
     public function customColumnFormats($column = ''): string
     {
-        return parent::customColumnFormats($column);
+        $result = parent::customColumnFormats($column);
+        return $result;
     }
 }
-    

@@ -30,6 +30,7 @@ Route::prefix($prefix)->group(function () {
                 Route::post('change_password_by_self', 'changePasswordBySelf')->name('本人修改密码');
                 Route::post('delete', 'deleteStaff')->name('删除账户');
                 Route::post('list', 'list')->name('获取员工列表');
+                Route::post('export', 'export')->name('导出员工数据');
             });
         }
 

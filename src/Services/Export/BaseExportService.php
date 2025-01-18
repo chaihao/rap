@@ -81,16 +81,7 @@ abstract class BaseExportService extends BaseService implements FromCollection, 
         }
         return $query;
     }
-    /**
-     * 自定义列格式化
-     */
-    public function customColumnFormats($column = ''): string
-    {
-        $formats = [
-            'status' => [0 => '禁用', 1 => '启用'],
-        ];
-        return $formats[$column] ?? '';
-    }
+
 
     /**
      * 获取导出字段
@@ -137,34 +128,46 @@ abstract class BaseExportService extends BaseService implements FromCollection, 
         return array_values($this->exportColumns);
     }
 
+
+    /**
+     * 自定义列格式化
+     */
+    public function customColumnFormats($column = ''): string
+    {
+        $formats = [
+            'is_super' => [0 => '否', 1 => '是'],
+            'status' => [0 => '禁用', 1 => '启用'],
+        ];
+        return $formats[$column] ?? '';
+    }
+    /**
+     * 映射名称
+     */
+    public function mappingsName($column = ''): string
+    {
+        $mappingsName = [];
+        return $mappingsName[$column] ?? '';
+    }
     /**
      * 导出数据
      */
     public function map($row): array
     {
         $column = [];
-        // 统一管理映射关系
-        $mappings = [
-            'status' => $this->customColumnFormats('status'),
-        ];
-        $mappingsName = [
-            'status' => 'status_name',
-        ];
-
         foreach ($this->keyColumn as $val) {
             // 使用映射数组
-            if (array_key_exists($val, $mappings)) {
-                $column[] = $mappings[$val][$row->$val] ?? '';
+            $mappings = $this->customColumnFormats($val);
+            if (!empty($mappings)) {
+                $column[] = $mappings[$row->$val] ?? '';
                 continue;
             }
-            if (array_key_exists($val, $mappingsName)) {
-                $column[] = $row->{$mappingsName[$val]} ?? '';
+            $mappingsName = $this->mappingsName($val);
+            if (!empty($mappingsName)) {
+                $column[] = $row->{$mappingsName} ?? '';
                 continue;
             }
-            // 直接映射的字段，包括'creator_id'等
             $column[] = $row->$val ?? '';
         }
-
         return $column;
     }
 
