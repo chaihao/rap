@@ -35,15 +35,8 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
     /**
      * 初始化服务
      */
-    public function __construct(Model $model = null)
+    public function __construct()
     {
-        if (!$this->model) {
-            if ($model) {
-                $this->setModel($model);
-            } else {
-                throw new ApiException('模型未设置');
-            }
-        }
         $this->getParams();
         $this->exportColumns = $this->getKeyColumn($this->getColumn()); // 获取导出字段
     }
@@ -327,7 +320,7 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
                     Redis::setex($redisKey, $totalPage * 0, $fileName); // 设置Redis过期时间
                 }
                 // 导出任务
-                $this->exportJob($model, $fileName, $params, $i, $limit, $totalPage, $redisKey);
+                $this->exportJob($fileName, $params, $i, $limit, $totalPage, $redisKey);
             }
             return ['status' => true, 'msg' => '开始导出', 'fileName' => $fileName]; // 返回导出开始状态
         } catch (ApiException $e) {
