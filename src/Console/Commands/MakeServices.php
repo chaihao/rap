@@ -220,7 +220,7 @@ class MakeServices extends GeneratorCommand
         $modelName = $modelName ? $modelName . DIRECTORY_SEPARATOR . $serviceInfo['modelName'] : $serviceInfo['modelName'];
 
         try {
-            $this->call('make:model', [
+            $this->call('rap:model', [
                 'name' => $modelName,
             ]);
         } catch (\Exception $e) {
@@ -256,7 +256,7 @@ class MakeServices extends GeneratorCommand
         $this->components->warn(sprintf("正在创建 Controller [%s]...", $displayPath));
 
         try {
-            $this->call('make:controller', [
+            $this->call('rap:controller', [
                 'name' => $controllerInfo['fullName']
             ]);
         } catch (\Exception $e) {
