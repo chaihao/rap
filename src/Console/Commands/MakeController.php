@@ -7,12 +7,12 @@ use Illuminate\Console\GeneratorCommand;
 
 class MakeController extends GeneratorCommand
 {
+
     /**
-     * 命令名称和签名
-     * 用于在命令行中调用此命令
+     * 命令签名
      * @var string
      */
-    protected $name = 'rap:controller';
+    protected $signature = 'rap:controller {name}'; // 统一命令签名
 
     /**
      * The console command description.
@@ -27,9 +27,6 @@ class MakeController extends GeneratorCommand
      * @return void
      */
     protected $type = 'Controller';  // command type
-
-
-    protected $signature = 'make:controller {name}';
 
     /**
      * 获取控制器模板文件的路径

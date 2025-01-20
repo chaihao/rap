@@ -12,7 +12,7 @@ class MakeExportServices extends GeneratorCommand
      *
      * @var string
      */
-    protected $name = 'rap:export';
+    protected $signature = 'rap:export';
 
     /**
      * The console command description.
