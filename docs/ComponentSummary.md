@@ -18,7 +18,7 @@ rap/
 │ └── Commands/ # 命令行命令
 │ ├── MakeController.php # 生成控制器命令
 │ ├── MakeModel.php # 生成模型命令
-│ ├── MakeRepositories.php # 生成仓库命令
+│ ├── artisan rap:.php # 生成仓库命令
 │ ├── MakeServices.php # 生成服务命令
 │ └── Stubs/ # 代码模板
 ├── Database/ # 数据库相关
