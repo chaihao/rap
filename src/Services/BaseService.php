@@ -153,13 +153,43 @@ abstract class BaseService
 
         // 加载关联
         if (method_exists($this->getModel(), 'listWithRelation')) {
-            $query->with($this->getModel()->listWithRelation());
+            $relations = $this->getModel()->listWithRelation();
+            if (is_array($relations) && !empty($relations)) {
+                $query->with($relations);
+            }
         }
-
         // 应用创建者范围
         $this->applyCreateByScope($query);
     }
 
+
+
+    /**
+     * 应用导出查询
+     */
+    protected function applyExportBaseQuery($query): void
+    {
+        // 选择字段
+        $query->select($this->getModel()->getListFields());
+
+        // 加载关联
+        if (method_exists($this->getModel(), 'getExportRelation')) {
+            $relations = $this->getModel()->getExportRelation();
+            if (is_array($relations) && !empty($relations)) {
+                $query->with($relations);
+            }
+        }
+        // 应用创建者范围
+        $this->applyCreateByScope($query);
+    }
+
+    /**
+     * 获取导出字段
+     */
+    public function getExportFields(): array
+    {
+        return $this->getModel()->getValidatorAttributes();
+    }
 
     /**
      * 应用搜索条件
@@ -1192,7 +1222,9 @@ abstract class BaseService
     {
         if (method_exists($this->getModel(), 'getWithRelation')) {
             $relations = $this->getModel()->getWithRelation();
-            $query->with($relations);
+            if (is_array($relations) && !empty($relations)) {
+                $query->with($relations);
+            }
         }
     }
 

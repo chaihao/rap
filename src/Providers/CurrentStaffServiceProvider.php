@@ -10,9 +10,6 @@ class CurrentStaffServiceProvider extends ServiceProvider
 {
     public function register()
     {
-        // 添加调试信息
-        Log::info('Registering CurrentStaffServiceProvider');
-
         $this->app->singleton('current_staff', function () {
             return new CurrentStaffService();
         });

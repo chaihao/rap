@@ -77,4 +77,27 @@ class DummyClass extends BaseModel
         $data = parent::formatOutput($data);
         return $data;
     }
+    /**
+     * 获取关联数据
+     */
+    public function getWithRelation(): array
+    {
+        return [];
+    }
+
+    /**
+     * 获取列表关联数据
+     */
+    public function listWithRelationData(): array
+    {
+        return [];
+    }
+
+    /**
+     * 获取导出关联数据
+     */
+    public function getExportRelation(): array
+    {
+        return [];
+    }
 }

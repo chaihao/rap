@@ -2,14 +2,16 @@
 
 namespace Chaihao\Rap\Services\Export;
 
+use Throwable;
+use ZipArchive;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Excel;
 use Chaihao\Rap\Job\ExportJob;
+use Illuminate\Support\Facades\Log;
 use Chaihao\Rap\Services\BaseService;
 use Illuminate\Support\Facades\Redis;
 use Chaihao\Rap\Exception\ApiException;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Builder;
 use Maatwebsite\Excel\Concerns\Exportable;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -28,30 +30,109 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
     public $page;
     public $limit;
     public $column;
-    public $sortColumn;
-    public $sortType;
     protected string $filePathSuffix = 'export/';
 
     /**
      * 初始化服务
      */
-    public function __construct()
+    public function __construct(Model $model = null)
     {
-        $this->exportColumns = $this->getExportFields();
-        $this->params = request()->all();
-        $this->page = $params['page'] ?? 1;
-        $this->limit = $params['page_size'] ?? 10000;
-        $this->column = $params['column'] ?? [];
-        $this->sortColumn = $params['sort_field'] ?? 'id';
-        $this->sortType = $params['sort_type'] ?? 'desc';
+        if (!$this->model) {
+            if ($model) {
+                $this->setModel($model);
+            } else {
+                throw new ApiException('模型未设置');
+            }
+        }
+        $this->getParams();
+        $this->exportColumns = $this->getKeyColumn($this->getColumn()); // 获取导出字段
+    }
+    /**
+     * 设置页码
+     */
+    public function setPage(int $page = 0): int
+    {
+        if (empty($page)) {
+            $page = $this->params['page'] ?? 0;
+        }
+        return $this->page = $page;
     }
 
     /**
-     * 获取导出字段
+     * 设置限制
      */
-    public function getExportFields(): array
+    public function setLimit(int $limit = 0): int
     {
-        return $this->getModel()->getValidatorAttributes();
+        if (empty($limit)) {
+            $limit = $this->params['page_size'] ?? 10000;
+        }
+        return $this->limit = $limit;
+    }
+
+    /**
+     * 设置列
+     */
+    public function setColumn(array $column = []): array
+    {
+        if (empty($column)) {
+            $column = $this->params['column'] ?? [];
+        }
+        return $this->column = $column;
+    }
+
+    /**
+     * 设置参数
+     */
+    public function setParams(array $params = []): array
+    {
+        if (empty($params)) {
+            $params = request()->all();
+        }
+        return $this->params = $params;
+    }
+
+    /**
+     * 获取页码
+     */
+    public function getPage(): int
+    {
+        if (empty($this->page)) {
+            $this->page = $this->params['page'] ?? 0;
+        }
+        return $this->page;
+    }
+
+    /**
+     * 获取限制
+     */
+    public function getLimit(): int
+    {
+        if (empty($this->limit)) {
+            $this->limit = $this->params['page_size'] ?? 10000;
+        }
+        return $this->limit;
+    }
+
+    /**
+     * 获取列
+     */
+    public function getColumn(): array
+    {
+        if (empty($this->column)) {
+            $this->column = $this->params['column'] ?? [];
+        }
+        return $this->column;
+    }
+
+    /**
+     * 获取参数
+     */
+    public function getParams(): array
+    {
+        if (empty($this->params)) {
+            $this->params = request()->all();
+        }
+        return $this->params;
     }
 
     /**
@@ -64,8 +145,8 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
 
         $query = $this->getModel()->newQuery();
 
-        // 应用基础查询
-        $this->applyBaseQuery($query);
+        // 应用导出基础查询
+        $this->applyExportBaseQuery($query);
 
         // 检查是否需要应用搜索条件和排序
         if (!empty($params)) {
@@ -83,6 +164,7 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
      */
     public function getKeyColumn($columns = []): array
     {
+        $this->exportColumns = $this->getExportFields(); // 获取导出字段
         if (!empty($columns)) {
             $result = [];
             foreach ($columns as  $column) {
@@ -99,7 +181,9 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
      */
     public function collection()
     {
-        return $this->filterQuery($this->params)->get();
+        return $this->filterQuery($this->getParams())
+            ->offset($this->getPage() * $this->getLimit())
+            ->limit($this->getLimit())->get();
     }
 
     /**
@@ -153,15 +237,27 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
             // 使用映射数组
             $mappings = $this->customColumnFormats($val);
             if (!empty($mappings)) {
-                $column[] = $mappings[$row->$val] ?? '';
+                $column[] = isset($mappings[$row->$val]) ? strip_tags($mappings[$row->$val]) : '';
                 continue;
             }
             $mappingsName = $this->mappingsName($val);
+            Log::info('mappingsName: ' . $mappingsName);
             if (!empty($mappingsName)) {
-                $column[] = $row->{$mappingsName} ?? '';
+                if (strpos($mappingsName, '.') !== false) {
+                    // 通用方式获取关联模型的字段值
+                    list($relation, $field) = explode('.', $mappingsName);
+                    Log::info('relation: ' . $relation);
+                    Log::info('field: ' . $field);
+                    // 获取关联模型的字段值
+                    $relatedModel = $row->$relation ?? null;
+                    $column[] = $relatedModel && isset($relatedModel->$field) ? strip_tags($relatedModel->$field) : '';
+                } else {
+                    // 直接取对应参数
+                    $column[] = isset($row->$mappingsName) ? strip_tags($row->$mappingsName) : '';
+                }
                 continue;
             }
-            $column[] = $row->$val ?? '';
+            $column[] = isset($row->$val) ? strip_tags($row->$val) : '';
         }
         return $column;
     }
@@ -187,10 +283,8 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
      */
     public function export($params)
     {
-
         $count = $this->filterQuery($params)->count();
-
-        if (empty($params['ids']) && $count > 10000) {
+        if (empty($params['ids']) && $count > $this->getLimit()) {
             $result =  $this->asynchronousExport($params); // 调用异步导出方法
             if ($result['status']) {
                 return '开始导出'; // 返回成功信息
@@ -199,7 +293,6 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
             }
         } else {
             $filename = $this->filePathSuffix . now()->format('YmdHis') . '.csv'; // 生成文件名
-
             $this->store($filename, 'public', Excel::CSV); // 存储CSV文件
             // return rtrim(env('APP_URL'), '/') . Storage::url($filename); // 返回文件URL
             return asset('storage/' . $filename); // 返回文件URL
@@ -213,11 +306,15 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
     public function asynchronousExport($params)
     {
         try {
-            $redisKey = 'AsynchronousExportRedisKey' . $this->getModel()->getTable(); // Redis键名
+            $model = $this->getModel(); // 确保获取模型实例
+            if (!$model) {
+                throw new ApiException("模型未设置"); // 添加模型未设置的异常处理
+            }
+            $redisKey = 'AsynchronousExportRedisKey' . $model->getTable(); // Redis键名
             if (Redis::exists($redisKey)) {
                 throw new ApiException("正在导出数据, 请稍后..."); // 检查是否已有导出任务
             }
-            $limit = 10000; // 每次导出的记录数限制
+            $limit = $this->getLimit(); // 每次导出的记录数限制
             $count = $this->filterQuery($params)->count(); // 获取符合条件的记录数
 
             if ($count <= 0) {
@@ -227,13 +324,26 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
             $fileName  = $this->filePathSuffix . uniqid(now()->format('YmdHis')); // 生成唯一文件名
             for ($i = 0; $i < $totalPage; $i++) {
                 if ($i == 0) {
-                    Redis::setex($redisKey, $totalPage * 20, $fileName); // 设置Redis过期时间
+                    Redis::setex($redisKey, $totalPage * 0, $fileName); // 设置Redis过期时间
                 }
-                ExportJob::dispatch($this, $fileName, $params, $i, $totalPage)->delay(Carbon::now()->addSeconds($i * 5)); // 调度导出任务
+                // 导出任务
+                $this->exportJob($model, $fileName, $params, $i, $limit, $totalPage, $redisKey);
             }
             return ['status' => true, 'msg' => '开始导出', 'fileName' => $fileName]; // 返回导出开始状态
         } catch (ApiException $e) {
+            Log::error($e->getMessage()); // 记录错误信息
             throw new ApiException($e->getMessage()); // 捕获异常并抛出
         }
+    }
+    /**
+     * @Author: chaihao
+     * @description: 导出任务
+     */
+    public function exportJob($fileName, $params, $page, $limit, int $totalPage, $redisKey)
+    {
+        // 不直接传递model对象，而是传递模型的类名
+        $serviceClass = get_class($this);
+        ExportJob::dispatch($serviceClass, $fileName, $params, $page, $limit, $totalPage, $redisKey)
+            ->delay(Carbon::now()->addSeconds($page * 3));
     }
 }
