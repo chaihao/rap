@@ -11,7 +11,7 @@ use Symfony\Component\Console\Input\InputOption;
  */
 class MakeModel extends GeneratorCommand
 {
-    protected $signature = 'rap:model';
+    protected $signature = 'rap:model {name}';
     protected $description = '创建自定义Model';
     protected $type = 'Model';
 
