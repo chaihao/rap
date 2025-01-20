@@ -12,7 +12,7 @@ class MakeController extends GeneratorCommand
      * 用于在命令行中调用此命令
      * @var string
      */
-    protected $name = 'make:controller';
+    protected $name = 'rap:controller';
 
     /**
      * The console command description.

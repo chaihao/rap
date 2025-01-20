@@ -13,7 +13,7 @@ class MakeServices extends GeneratorCommand
      *
      * @var string
      */
-    protected $name = 'make:services [-m|--create-model] [-c|--create-controller]';
+    protected $name = 'rap:services [-m|--create-model] [-c|--create-controller]';
 
     /**
      * The console command description.

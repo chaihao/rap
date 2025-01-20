@@ -4,13 +4,13 @@
 
 ### 1. 核心中间件总览
 
-| 中间件名称 | 功能描述 | 使用场景 |
-|------------|----------|----------|
-| check.auth | JWT认证 | 需要验证用户身份的接口 |
-| permission | 权限验证 | 需要检查用户权限的接口 |
+| 中间件名称              | 功能描述     | 使用场景               |
+| ----------------------- | ------------ | ---------------------- |
+| check.auth              | JWT 认证     | 需要验证用户身份的接口 |
+| permission              | 权限验证     | 需要检查用户权限的接口 |
 | request.response.logger | 请求响应日志 | 需要记录操作日志的接口 |
-| cors | 跨域处理 | 需要支持跨域请求的接口 |
-| upgrade | 系统升级模式 | 系统维护升级时的控制 |
+| cors                    | 跨域处理     | 需要支持跨域请求的接口 |
+| upgrade                 | 系统升级模式 | 系统维护升级时的控制   |
 
 ### 2. 中间件使用方式
 
@@ -41,12 +41,12 @@ Route::middleware(['rap-api'])->group(function () {
 
 ```php
 // 1. 创建中间件
-php artisan make:middleware CheckRole
+php artisan rap:middleware CheckRole
 
 // 2. 编写中间件逻辑
 namespace App\Http\Middleware;
 
-class CheckRole 
+class CheckRole
 {
     public function handle(Request $request, Closure $next)
     {
@@ -83,13 +83,13 @@ public function create(Request $request)
 {
     try {
         $product = Product::findOrFail($request->product_id);
-        
+
         if ($product->stock < $request->quantity) {
             throw new ApiException('库存不足');
         }
-        
+
         // 业务逻辑...
-        
+
     } catch (ApiException $e) {
         return $e->render();
     }
@@ -98,26 +98,26 @@ public function create(Request $request)
 
 ### 2. 错误码规范
 
-| 错误码 | 说明 | 使用场景 | 对应方法 |
-|--------|------|----------|----------|
-| 400 | 请求错误 | 参数错误、业务逻辑错误 | `ApiException::badRequest()` |
-| 401 | 未授权 | 未登录、token失效 | `ApiException::unauthorized()` |
-| 403 | 禁止访问 | 无权限访问 | `ApiException::forbidden()` |
-| 404 | 未找到 | 资源不存在 | `ApiException::notFound()` |
-| 422 | 验证错误 | 表单验证失败 | `ApiException::validationError()` |
-| 500 | 服务器错误 | 系统异常 | `ApiException::serverError()` |
+| 错误码 | 说明       | 使用场景               | 对应方法                          |
+| ------ | ---------- | ---------------------- | --------------------------------- |
+| 400    | 请求错误   | 参数错误、业务逻辑错误 | `ApiException::badRequest()`      |
+| 401    | 未授权     | 未登录、token 失效     | `ApiException::unauthorized()`    |
+| 403    | 禁止访问   | 无权限访问             | `ApiException::forbidden()`       |
+| 404    | 未找到     | 资源不存在             | `ApiException::notFound()`        |
+| 422    | 验证错误   | 表单验证失败           | `ApiException::validationError()` |
+| 500    | 服务器错误 | 系统异常               | `ApiException::serverError()`     |
 
 ### 3. 调试模式响应
 
 ```json
 {
-    "success": false,
-    "code": 500,
-    "message": "系统错误",
-    "debug": {
-        "file": "/app/Services/OrderService.php",
-        "line": 100,
-        "trace": "..." 
-    }
+  "success": false,
+  "code": 500,
+  "message": "系统错误",
+  "debug": {
+    "file": "/app/Services/OrderService.php",
+    "line": 100,
+    "trace": "..."
+  }
 }
 ```

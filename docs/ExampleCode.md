@@ -25,8 +25,8 @@ $result = $service->withLock(
     ['timeout' => 30]
 );
 ```
-### 创建Service使用示例
 
+### 创建 Service 使用示例
 
 ```php
 # .env 配置
@@ -39,7 +39,7 @@ $result = $service->withLock(
     'version' => env('RAP_CONTROLLER_VERSION', 'V1\\'), // 控制器版本
 ],
 
-php artisan make:services User/UserService
+php artisan rap:services User/UserService
 
 # 生成文件
 app/Http/Controllers/User/UserController.php
@@ -49,10 +49,12 @@ app/Models/User/User.php
 app/Services/User/UserService.php
 
 ```
+
 **注意**：
-- 如果配置了RAP_CONTROLLER_VERSION=V1，则生成文件为app/Http/Controllers/V1/User/UserController.php
-- 如果配置了RAP_CONTROLLER_VERSION=V2，则生成文件为app/Http/Controllers/V2/User/UserController.php
-- 如果未配置RAP_CONTROLLER_VERSION，则生成文件为app/Http/Controllers/User/UserController.php
+
+- 如果配置了 RAP_CONTROLLER_VERSION=V1，则生成文件为 app/Http/Controllers/V1/User/UserController.php
+- 如果配置了 RAP_CONTROLLER_VERSION=V2，则生成文件为 app/Http/Controllers/V2/User/UserController.php
+- 如果未配置 RAP_CONTROLLER_VERSION，则生成文件为 app/Http/Controllers/User/UserController.php
 
 ### 路由配置
 
@@ -108,7 +110,7 @@ throw ApiException::failed('操作失败');
 throw ApiException::validationError('验证失败', [
     'name' => ['名称不能为空'],
     'price' => ['价格必须大于0']
-]); 
+]);
 ```
 
 ### 参数验证示例

@@ -12,7 +12,7 @@ class TestData extends Command
      *
      * @var string
      */
-    protected $signature = 'app:test-data';
+    protected $name = 'rap:test-data';
 
     /**
      * The console command description.

@@ -25,20 +25,22 @@ RAP 是一个基于 Laravel 的后台管理系统组件包,提供完整的 RBAC 
 composer require chaihao/laravel-rap-admin
 ```
 
-
 ### 2. 基础配置
 
-* 发布配置文件
+- 发布配置文件
+
 ```bash
 php artisan vendor:publish --tag=rap-config
 ```
 
-* 运行数据库迁移
+- 运行数据库迁移
+
 ```bash
 php artisan migrate
 ```
 
-* 生成 JWT 密钥
+- 生成 JWT 密钥
+
 ```bash
 php artisan jwt:secret
 ```
@@ -113,6 +115,7 @@ throw new ApiException('操作失败', ApiException::BAD_REQUEST);
 - VALIDATION_ERROR (422) # 验证错误
 - SERVER_ERROR (500)    # 服务器错误
 ```
+
 [更多异常处理](Readme-ApiException.md)
 
 ### 中间件
@@ -139,20 +142,20 @@ throw new ApiException('操作失败', ApiException::BAD_REQUEST);
 
 ```bash
 # 生成各类文件
-php artisan make:controller UserController  # 控制器
-php artisan make:model User                # 模型
-php artisan make:services UserService      # 服务类
-php artisan make:repositories UserRepo     # 仓储类
+php artisan rap:controller UserController  # 控制器
+php artisan rap:model User                # 模型
+php artisan rap:services UserService      # 服务类
+php artisan rap:repositories UserRepo     # 仓储类
 ```
+
 ```php
-php artisan make:services User/UserService
+php artisan rap:services User/UserService
 
 # 生成文件
 app/Http/Controllers/User/UserController.php
 app/Models/User/User.php
 app/Services/User/UserService.php
 ```
-
 
 ## 进阶使用
 
@@ -198,20 +201,24 @@ php artisan migrate
 ## 常见问题
 
 ### 1. JWT 认证失败
+
 - 检查是否已生成 JWT 密钥
 - 确认 token 格式正确
 
 ### 2. 权限验证失败
+
 - 检查用户权限分配
 - 确认权限名称正确
 
 ### 3. 跨域问题
+
 - 检查 CORS 配置
 - 确认请求头设置
 
 ## 更新日志
 
 ### v1.1.0 (2024-03-25)
+
 - 优化代码生成器
   - 支持自动创建关联文件(Model/Controller)
   - 改进模板结构,提供更多默认实现
@@ -228,7 +235,6 @@ php artisan migrate
   - 优化请求日志记录
   - 增强跨域处理
   - 完善升级模式控制
-
 
 ## 开源协议
 

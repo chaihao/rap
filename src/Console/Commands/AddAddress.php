@@ -12,7 +12,7 @@ class AddAddress extends Command
      *
      * @var string
      */
-    protected $signature = 'app:add-address';
+    protected $name = 'rap:add-address';
 
     /**
      * The console command description.
