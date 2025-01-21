@@ -295,24 +295,29 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
      */
     public function export($params)
     {
-        $count = $this->filterQuery($params)->count();
-        if (empty($params['ids']) && $count > $this->getLimit()) {
-            $result =  $this->asynchronousExport($params); // 调用异步导出方法
-            if ($result['status']) {
-                return '开始导出'; // 返回成功信息
+        try {
+            $count = $this->filterQuery($params)->count();
+            if (empty($params['ids']) && $count > $this->getLimit()) {
+                $result =  $this->asynchronousExport($params); // 调用异步导出方法
+                if ($result['status']) {
+                    return '开始导出'; // 返回成功信息
+                } else {
+                    throw new ApiException($result['msg']); // 返回错误信息
+                }
             } else {
-                throw new ApiException($result['msg']); // 返回错误信息
+                $filename = $this->filePathSuffix . now()->format('YmdHis') . '.csv'; // 生成文件名
+                $this->store($filename, 'public', Excel::CSV); // 存储CSV文件
+                $params = [
+                    'path' => Storage::disk('public')->path($filename), // 获取文件完整路径,
+                    'url' => Storage::url($filename), // 获取文件URL
+                ];
+                $this->addExportLog($params); // 添加导出日志
+                // return rtrim(env('APP_URL'), '/') . Storage::url($filename); // 返回文件URL
+                return asset('storage/' . $filename); // 返回文件URL
             }
-        } else {
-            $filename = $this->filePathSuffix . now()->format('YmdHis') . '.csv'; // 生成文件名
-            $this->store($filename, 'public', Excel::CSV); // 存储CSV文件
-            $params = [
-                'path' => Storage::disk('public')->path($filename), // 获取文件完整路径,
-                'url' => Storage::url($filename), // 获取文件URL
-            ];
-            $this->addExportLog($params); // 添加导出日志
-            // return rtrim(env('APP_URL'), '/') . Storage::url($filename); // 返回文件URL
-            return asset('storage/' . $filename); // 返回文件URL
+        } catch (ApiException $e) {
+            $this->addExportLog(['error_msg' => $e->getMessage()], ExportLogService::STATUS_FAILED);
+            throw new ApiException($e->getMessage()); // 捕获异常并抛出
         }
     }
 
