@@ -84,16 +84,17 @@ class ExportJob implements ShouldQueue
                 // $downloadUrl = rtrim(env('APP_URL'), '/') . Storage::url($baseName . '.zip'); // 返回文件URL
                 $downloadUrl = asset('storage/' . $baseName . '.zip');
 
-                $path = Storage::disk('public')->path($baseName . '.zip');
-                $url = Storage::url($baseName . '.zip');
-                $exportLogId = $service->addExportLog($path, $url);
+                $params = [
+                    'path' => Storage::disk('public')->path($baseName . '.zip'),
+                    'url' => Storage::url($baseName . '.zip'),
+                ];
+                $service->addExportLog($params);
                 // 记录下载链接到日志
                 Log::info('下载链接: ' . $downloadUrl);
                 // 删除导出限制
                 Redis::delete($this->redisKey);
                 Redis::delete($this->fileName); // 删除计数器
                 Log::info($downloadUrl);
-                echo $downloadUrl;
             }
         } catch (Throwable $t) {
             $params = [

@@ -308,7 +308,7 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
             $this->store($filename, 'public', Excel::CSV); // 存储CSV文件
             $params = [
                 'path' => Storage::disk('public')->path($filename), // 获取文件完整路径,
-                'url' => Storage::disk('public')->url($filename), // 获取文件URL
+                'url' => Storage::url($filename), // 获取文件URL
             ];
             $this->addExportLog($params); // 添加导出日志
             // return rtrim(env('APP_URL'), '/') . Storage::url($filename); // 返回文件URL
