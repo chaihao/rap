@@ -46,12 +46,10 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
     /**
      * 设置页码
      */
-    public function setPage(int $page = 0): int
+    public function setPage(int $page = 0)
     {
-        if (empty($page)) {
-            $page = $this->params['page'] ?? 0;
-        }
-        return $this->page = $page;
+        $this->page = $page ?: ($this->params['page'] ?? 0); // 简化页码设置
+        return $this;
     }
 
     /**
@@ -59,40 +57,41 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
      */
     public function setName($name = '导出数据')
     {
-        return $this->name = $name;
+        $this->name = $name;
+        return $this;
     }
 
     /**
      * 设置限制
      */
-    public function setLimit(int $limit = 0): int
+    public function setLimit(int $limit = 0)
     {
-        if (empty($limit)) {
-            $limit = $this->params['page_size'] ?? 10000;
-        }
-        return $this->limit = $limit;
+        $this->limit = $limit ?: ($this->params['page_size'] ?? 10000); // 简化限制设置
+        return $this;
     }
 
     /**
      * 设置列
      */
-    public function setColumn(array $column = []): array
+    public function setColumn(array $column = [])
     {
         if (empty($column)) {
             $column = $this->params['column'] ?? [];
         }
-        return $this->column = $column;
+        $this->column = $column;
+        return $this;
     }
 
     /**
      * 设置参数
      */
-    public function setParams(array $params = []): array
+    public function setParams(array $params = [])
     {
         if (empty($params)) {
             $params = request()->all();
         }
-        return $this->params = $params;
+        $this->params = $params;
+        return $this;
     }
 
     /**
@@ -100,10 +99,7 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
      */
     public function getPage(): int
     {
-        if (empty($this->page)) {
-            $this->page = $this->params['page'] ?? 0;
-        }
-        return $this->page;
+        return $this->page ?: ($this->params['page'] ?? 0); // 简化获取页码
     }
 
     /**
@@ -111,10 +107,7 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
      */
     public function getLimit(): int
     {
-        if (empty($this->limit)) {
-            $this->limit = $this->params['page_size'] ?? 10000;
-        }
-        return $this->limit;
+        return $this->limit ?: ($this->params['page_size'] ?? 10000); // 简化获取限制
     }
 
     /**
@@ -122,10 +115,7 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
      */
     public function getColumn(): array
     {
-        if (empty($this->column)) {
-            $this->column = $this->params['column'] ?? [];
-        }
-        return $this->column;
+        return $this->column ?: ($this->params['column'] ?? []); // 简化获取列
     }
 
     /**
@@ -133,10 +123,7 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
      */
     public function getParams(): array
     {
-        if (empty($this->params)) {
-            $this->params = request()->all();
-        }
-        return $this->params;
+        return $this->params ?: request()->all(); // 简化获取参数
     }
 
     /**

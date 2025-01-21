@@ -33,6 +33,7 @@ abstract class BaseService
     public function setModel(Model $model)
     {
         $this->model = $model;
+        return $this;
     }
 
     /**
@@ -41,7 +42,7 @@ abstract class BaseService
      * @return Model
      * @throws \RuntimeException
      */
-    protected function getModel(): Model
+    public function getModel(): Model
     {
         if (!$this->model) {
             throw new \RuntimeException('Model has not been set.');
