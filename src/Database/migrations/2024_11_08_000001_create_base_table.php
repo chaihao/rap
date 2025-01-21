@@ -22,6 +22,7 @@ return new class extends Migration {
                 // 创建人类型 1 总管理平台员工 2 分公司员工 3 用户
                 $table->tinyInteger('created_by_platform')->default(0)->comment('创建人类型 1 总管理平台员工 3 用户');
                 $table->timestamps();
+                $table->comment('操作日志');
                 $table->index('created_by', 'idx_created_by');
                 $table->index('name', 'idx_name');
             });
@@ -55,7 +56,33 @@ return new class extends Migration {
                 $table->timestamps();
                 $table->softDeletes();
                 $table->index('phone', 'idx_phone');
+                $table->comment('员工信息');
             });
         }
+        if (!Schema::hasTable('export_log')) {
+            Schema::create('export_log', function (Blueprint $table) {
+                $table->id();
+                $table->string('name', 255)->comment('标题');
+                $table->string('path', 255)->nullable()->default('')->comment('文件路径');
+                $table->string('url', 255)->nullable()->default('')->comment('文件URL');
+                $table->tinyInteger('is_download')->default(0)->nullable()->comment('是否下载 1 已下载 0 未下载');
+                $table->timestamp('download_time')->nullable()->comment('下载时间');
+                $table->tinyInteger('status')->default(1)->nullable()->comment('状态 1 导出完成 2 导出失败 3 文件已删除');
+                $table->string('error_msg', 255)->nullable()->default('')->comment('错误信息');
+                $table->timestamps();
+                $table->comment('导出日志');
+            });
+        }
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('operation_log');
+        Schema::dropIfExists('sys_address');
+        Schema::dropIfExists(config('rap.models.staff.table'));
+        Schema::dropIfExists('export_log');
     }
 };

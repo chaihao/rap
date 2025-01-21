@@ -13,17 +13,8 @@ return [
         'prefix' => env('RAP_API_PREFIX', 'api'), // api前缀
         'guard' => env('RAP_API_GUARD', 'api'), // 默认api守卫
     ],
-    'namespace' => [
-        'App\\Models\\',
-        'App\\Services\\',
-        'App\\Http\\Controllers\\',
-    ],
     'controller' => [
         'version' => env('RAP_CONTROLLER_VERSION', ''), // 控制器版本
-    ],
-    'create_services' => [
-        'model' => env('RAP_CREATE_SERVICES_MODEL', true), // 创建service时，同时创建model
-        'controller' => env('RAP_CREATE_SERVICES_CONTROLLER', true), // 创建service时，同时创建controller
     ],
     'models' => [
         'staff' => [

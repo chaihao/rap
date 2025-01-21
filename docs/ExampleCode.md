@@ -30,8 +30,6 @@ $result = $service->withLock(
 
 ```php
 # .env 配置
-# RAP_CREATE_SERVICES_MODEL=true # 创建service时，同时创建model
-# RAP_CREATE_SERVICES_CONTROLLER=true # 创建service时，同时创建
 # RAP_CONTROLLER_VERSION=V1 # 控制器版本
 
 # config/rap.php 配置

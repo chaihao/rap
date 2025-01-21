@@ -5,6 +5,7 @@ namespace Chaihao\Rap\Console\Commands;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Console\GeneratorCommand;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Input\InputArgument;
 
 class MakeServices extends GeneratorCommand
 {
@@ -13,7 +14,7 @@ class MakeServices extends GeneratorCommand
      *
      * @var string
      */
-    protected $signature = 'rap:services {name} [-m|--create-model] [-c|--create-controller]';
+    protected $name = 'rap:services {name?} {--create-model} {--create-controller}';
 
     /**
      * The console command description.
@@ -48,10 +49,13 @@ class MakeServices extends GeneratorCommand
     {
         return $rootNamespace . '\Services';
     }
-    /**
-     * 获取命令行选项
-     * @return array
-     */
+    protected function getArguments()
+    {
+        return [
+            ['name', InputArgument::OPTIONAL, '服务类名'],
+        ];
+    }
+
     protected function getOptions()
     {
         return [
@@ -59,6 +63,7 @@ class MakeServices extends GeneratorCommand
             ['create-controller', 'c', InputOption::VALUE_OPTIONAL, '是否创建控制器', true],
         ];
     }
+
     /**
      * 设置类名和自定义替换内容
      * @param string $stub
@@ -138,10 +143,9 @@ class MakeServices extends GeneratorCommand
         try {
             // 使用数组来存储需要处理的文件
             $filesToHandle = [
-                'model' => $this->option('create-model'),
-                'controller' => $this->option('create-controller')
+                'model' => filter_var($this->option('create-model'), FILTER_VALIDATE_BOOLEAN) ?? true,
+                'controller' => filter_var($this->option('create-controller'), FILTER_VALIDATE_BOOLEAN) ?? true
             ];
-
             foreach ($filesToHandle as $type => $shouldHandle) {
                 if ($shouldHandle) {
                     $method = 'handle' . ucfirst($type) . 'File';

@@ -2,16 +2,17 @@
 
 namespace Chaihao\Rap\Console\Commands;
 
-use Illuminate\Console\GeneratorCommand;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Console\GeneratorCommand;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Input\InputArgument;
 
 /**
  * 自定义Model生成命令类
  */
 class MakeModel extends GeneratorCommand
 {
-    protected $signature = 'rap:model {name}';
+    protected $name = 'rap:model {name} {table?}';
     protected $description = '创建自定义Model';
     protected $type = 'Model';
 
@@ -52,10 +53,11 @@ class MakeModel extends GeneratorCommand
     /**
      * 获取命令选项
      */
-    protected function getOptions()
+    protected function getArguments()
     {
         return [
-            ['table', null, InputOption::VALUE_OPTIONAL, 'The name of the table']
+            ['name', InputArgument::REQUIRED, 'The name of the model'],
+            ['table', InputArgument::OPTIONAL, 'The name of the table']
         ];
     }
 
@@ -64,7 +66,7 @@ class MakeModel extends GeneratorCommand
      */
     protected function replaceClass($stub, $name)
     {
-        $tableName = $this->option('table') ?: $this->getTableName();
+        $tableName = $this->argument('table') ?: $this->getTableName();
         // 获取过滤后的字段列表（不包含时间戳字段）
         $list = $tableName ? $this->organizeData($tableName) : [];
 

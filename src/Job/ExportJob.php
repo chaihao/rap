@@ -13,6 +13,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Chaihao\Rap\Services\Sys\ExportLogService;
 use App\Services\Export\WallpapersExportService;
 use Chaihao\Rap\Services\Export\BaseExportService;
 
@@ -82,6 +83,10 @@ class ExportJob implements ShouldQueue
                 }
                 // $downloadUrl = rtrim(env('APP_URL'), '/') . Storage::url($baseName . '.zip'); // 返回文件URL
                 $downloadUrl = asset('storage/' . $baseName . '.zip');
+
+                $path = Storage::disk('public')->path($baseName . '.zip');
+                $url = Storage::url($baseName . '.zip');
+                $exportLogId = $service->addExportLog($path, $url);
                 // 记录下载链接到日志
                 Log::info('下载链接: ' . $downloadUrl);
                 // 删除导出限制
@@ -91,6 +96,10 @@ class ExportJob implements ShouldQueue
                 echo $downloadUrl;
             }
         } catch (Throwable $t) {
+            $params = [
+                'error_msg' => $t->getMessage(),
+            ];
+            $service->addExportLog($params, ExportLogService::STATUS_FAILED);
             Log::error($t->getMessage()); // 记录错误信息
         }
     }

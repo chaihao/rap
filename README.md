@@ -65,8 +65,6 @@ CACHE_PREFIX=
 RAP_API_PREFIX=api        # API 路由前缀
 RAP_API_GUARD=api        # API 认证守卫
 RAP_CONTROLLER_VERSION=V1\ # 控制器版本
-RAP_CREATE_SERVICES_MODEL=true # 创建service时，同时创建model
-RAP_CREATE_SERVICES_CONTROLLER=true # 创建service时，同时创建controller
 
 # 日志配置
 RAP_ENABLE_SQL_LOGGING=true   # 启用 SQL 日志
@@ -155,6 +153,10 @@ php artisan rap:services User/UserService
 app/Http/Controllers/User/UserController.php
 app/Models/User/User.php
 app/Services/User/UserService.php
+
+# 不生成模型和控制器 使用 -mfalse -cfalse 或 --create-model=false --create-controller=false 控制是否生成 model 和 controller
+php artisan rap:services User/UserService --create-model=false --create-controller=false
+php artisan rap:services User/UserService -mfalse -cfalse
 ```
 
 ## 进阶使用

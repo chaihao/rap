@@ -12,10 +12,12 @@ use Chaihao\Rap\Services\BaseService;
 use Illuminate\Support\Facades\Redis;
 use Chaihao\Rap\Exception\ApiException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Builder;
 use Maatwebsite\Excel\Concerns\Exportable;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use Chaihao\Rap\Services\Sys\ExportLogService;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
@@ -30,6 +32,7 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
     public $page;
     public $limit;
     public $column;
+    public $name;
     protected string $filePathSuffix = 'export/';
 
     /**
@@ -49,6 +52,14 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
             $page = $this->params['page'] ?? 0;
         }
         return $this->page = $page;
+    }
+
+    /**
+     * 设置名称
+     */
+    public function setName($name = '导出数据')
+    {
+        return $this->name = $name;
     }
 
     /**
@@ -126,6 +137,14 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
             $this->params = request()->all();
         }
         return $this->params;
+    }
+
+    /**
+     * 获取名称
+     */
+    public function getName()
+    {
+        return $this->name;
     }
 
     /**
@@ -287,6 +306,11 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
         } else {
             $filename = $this->filePathSuffix . now()->format('YmdHis') . '.csv'; // 生成文件名
             $this->store($filename, 'public', Excel::CSV); // 存储CSV文件
+            $params = [
+                'path' => Storage::disk('public')->path($filename), // 获取文件完整路径,
+                'url' => Storage::disk('public')->url($filename), // 获取文件URL
+            ];
+            $this->addExportLog($params); // 添加导出日志
             // return rtrim(env('APP_URL'), '/') . Storage::url($filename); // 返回文件URL
             return asset('storage/' . $filename); // 返回文件URL
         }
@@ -338,5 +362,23 @@ class BaseExportService extends BaseService implements FromCollection, WithColum
         $serviceClass = get_class($this);
         ExportJob::dispatch($serviceClass, $fileName, $params, $page, $limit, $totalPage, $redisKey)
             ->delay(Carbon::now()->addSeconds($page * 3));
+    }
+
+    /**
+     * @Author: chaihao
+     * @description: 添加导出日志
+     */
+    public function addExportLog($params, $status = ExportLogService::STATUS_COMPLETED)
+    {
+        $exportLogService = app(ExportLogService::class);
+        $exportLogService->add([
+            'name' => $this->getName(),
+            'path' => $params['path'] ?? '',
+            'url' => $params['url'] ?? '',
+            'status' => $status,
+            'is_download' => ExportLogService::IS_DOWNLOAD_NO,
+            'error_msg' => $params['error_msg'] ?? '',
+        ], true);
+        return $exportLogService->getModel()->id;
     }
 }

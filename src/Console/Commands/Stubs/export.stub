@@ -12,6 +12,7 @@ class DummyClass extends BaseExportService
     public function __construct(DummyModel $model)
     {
         $this->setModel($model);
+        $this->setName('导出数据');
         parent::__construct();
     }
 
