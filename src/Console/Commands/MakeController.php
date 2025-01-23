@@ -49,7 +49,15 @@ class MakeController extends GeneratorCommand
         $stub = $this->replaceModelName($stub);
         return parent::replaceClass($stub, $name);
     }
-
+    /**
+     * 获取默认命名空间
+     * @param string $rootNamespace
+     * @return string
+     */
+    protected function getDefaultNamespace($rootNamespace)
+    {
+        return $rootNamespace . '\Http\Controllers'; // 可以考虑使用常量来定义命名空间
+    }
     /**
      * replaceModelName 方法
      * 负责替换模板中的所有占位符
