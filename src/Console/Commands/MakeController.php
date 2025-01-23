@@ -37,15 +37,6 @@ class MakeController extends GeneratorCommand
         return __DIR__ . '/Stubs/controller.stub';
     }
 
-    /**
-     * 获取默认命名空间
-     * @param string $rootNamespace
-     * @return string
-     */
-    protected function getDefaultNamespace($rootNamespace)
-    {
-        return $rootNamespace . '\Http\Controllers';
-    }
 
     /**
      * 设置类名和自定义替换内容
@@ -56,7 +47,6 @@ class MakeController extends GeneratorCommand
     protected function replaceClass($stub, $name): string
     {
         $stub = $this->replaceModelName($stub);
-        $stub = $this->replaceNamespaceData($stub, $name);
         return parent::replaceClass($stub, $name);
     }
 
@@ -77,10 +67,8 @@ class MakeController extends GeneratorCommand
             'DummyModel' => $controllerName,                               // 模型名
             'DummyService' => $controllerName . 'Service'                  // 服务名
         ];
-
-        // 处理模型和服务的命名空间
-        $modelName = str_replace('Controller', '', $name);
-        $serviceName = str_replace('Controller', 'Service', $name);
+        $modelName = $replacements['DummyModel'];
+        $serviceName = $replacements['DummyService'];
 
         // 获取命名空间并设置替换规则
         $replacements['USED_DUMMY_MODEL'] = $this->getNamespaceReplacement($modelName, 'Models');
@@ -111,19 +99,6 @@ class MakeController extends GeneratorCommand
         return $namespace ? 'use ' . $namespace . ';' : '';
     }
 
-    /**
-     * 替换命名空间数据
-     * @param string $stub
-     * @param string $name
-     * @return string
-     */
-    protected function replaceNamespaceData($stub, $name)
-    {
-        $namespace = $this->getNamespace($name);
-        $baseControllerNamespace = $this->getBaseControllerNamespace($namespace);
-
-        return str_replace('USE_BASE_CONTROLLER', $baseControllerNamespace, $stub);
-    }
 
     /**
      * 获取模型名称
@@ -138,23 +113,6 @@ class MakeController extends GeneratorCommand
         return str_replace('Controller', '', end($exName));
     }
 
-    /**
-     * 获取基础控制器命名空间  
-     * @param string $namespace
-     * @return string
-     */
-    private function getBaseControllerNamespace($namespace): string
-    {
-        $segments = ['Admin', 'Web', 'App'];
-
-        foreach ($segments as $segment) {
-            if (strpos($namespace, $segment) !== false) {
-                return substr($namespace, 0, strpos($namespace, $segment) + strlen($segment)) . '\BaseController';
-            }
-        }
-
-        return $namespace . '\BaseController';
-    }
 
     /**
      * handle 方法
@@ -235,10 +193,8 @@ class MakeController extends GeneratorCommand
         // 实例化 Filesystem
         $filesystem = new Filesystem();
         $files = $filesystem->allFiles(base_path() . '/app/' . $type);
-
         // 检测目录下是否存在 $serviceInfo['modelName'] 文件名的文件
         $modelFileName = $className . '.php';
-
         // 使用 array_filter 优化文件查找
         $matchedFiles = array_filter($files, fn($file) => $file->getFilename() === $modelFileName);
 
