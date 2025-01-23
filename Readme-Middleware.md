@@ -1,10 +1,9 @@
-
 ## 中间件使用
 
 ### 1. 核心中间件说明
 
 - `check.auth`: JWT 认证中间件
-- `permission`: 权限验证中间件  
+- `permission`: 权限验证中间件
 - `cors`: 跨域处理中间件
 - `request.response.logger`: 请求响应日志中间件
 - `upgrade`: 系统升级模式中间件
@@ -12,6 +11,7 @@
 ### 2. 中间件使用方式
 
 #### 2.1 单个路由使用中间件
+
 ```
 Route::post('/user/profile', [UserController::class, 'profile'])
     ->middleware(['check.auth']);
@@ -19,7 +19,7 @@ Route::post('/user/profile', [UserController::class, 'profile'])
 
 #### 2.2 路由组使用中间件
 
-```php 
+```php
 Route::middleware(['rap-api'])->group(function () {
     Route::post('/order/create', [OrderController::class, 'create']);
     Route::post('/order/cancel', [OrderController::class, 'cancel']);
@@ -29,6 +29,12 @@ Route::middleware(['rap-api'])->group(function () {
 #### 2.3 指定角色或权限
 
 ```php
+# 默认中间件组 rap-api
+[
+    'check.auth',
+    'permission',
+    'request.response.logger'
+]
 // 检测当前路由权限 -- 默认检查权限, 如果指定角色, 则同时检查角色和权限
 Route::middleware(['rap-api', 'permission'])->group(function () {
     Route::post('/order/create', [OrderController::class, 'create']);
@@ -36,6 +42,11 @@ Route::middleware(['rap-api', 'permission'])->group(function () {
 
 // 指定角色 -- 同时检查角色和权限 -- 角色优先级高于权限 -- 符合任意一个即可 -- 'permission:admin' 表示角色为 admin 的用户可以访问
 Route::middleware(['rap-api', 'permission:admin'])->group(function () {
+    Route::post('/order/create', [OrderController::class, 'create']);
+});
+
+// 指定路由守卫 默认check.auth:api守卫 可以指定其他守卫
+Route::middleware(['check.auth:web', 'permission:admin'])->group(function () {
     Route::post('/order/create', [OrderController::class, 'create']);
 });
 ```
@@ -57,7 +68,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 
-class CheckRole 
+class CheckRole
 {
     public function handle(Request $request, Closure $next)
     {
