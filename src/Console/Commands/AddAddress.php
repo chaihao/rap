@@ -2,8 +2,10 @@
 
 namespace Chaihao\Rap\Console\Commands;
 
-use Chaihao\Rap\Models\Sys\SysAddress;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Chaihao\Rap\Models\Sys\SysAddress;
 
 class AddAddress extends Command
 {
@@ -52,17 +54,8 @@ class AddAddress extends Command
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new \Exception('JSON 解析错误：' . json_last_error_msg());
         }
-
-        \DB::beginTransaction();
-        try {
-            SysAddress::truncate();
-            $this->insertAddressData($data);
-            \DB::commit();
-            $this->info('地址数据添加成功');
-        } catch (\Exception $e) {
-            \DB::rollBack();
-            throw $e;
-        }
+        SysAddress::truncate();
+        $this->insertAddressData($data);
     }
     /**
      * 插入地址数据
@@ -105,7 +98,7 @@ class AddAddress extends Command
             $this->line(''); // 添加换行
 
         } catch (\Exception $e) {
-            \Log::error('插入地址数据失败', [
+            Log::error('插入地址数据失败', [
                 'error' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine()
