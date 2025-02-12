@@ -428,8 +428,8 @@ class MakeModel extends GeneratorCommand
         // 根据字段类型设置相应的验证规则
         foreach ($typeMap as $castType => $types) {
             if (in_array($baseType, $types)) {
-                $cast = $castType;
-                $rules[] = $castType === 'numeric' ? 'numeric' : $castType;
+                $cast = $castType === 'numeric' ? 'double' : $castType;
+                $rules[] = $castType === 'datetime' ? 'date' : ($castType === 'numeric' ? 'numeric' : $castType);
 
                 // 字符串类型添加长度限制
                 if ($length && in_array($baseType, ['char', 'varchar'])) {
