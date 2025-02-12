@@ -22,6 +22,7 @@ class SysAddress extends BaseModel
     protected bool $modelCache = true;
     protected int $cacheTTL = 3600;
     protected string $cachePrefix = '';
+    public $timestamps = false;
 
     // 验证配置
     public $scenarios = [
