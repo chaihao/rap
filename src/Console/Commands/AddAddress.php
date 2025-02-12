@@ -2,9 +2,8 @@
 
 namespace Chaihao\Rap\Console\Commands;
 
-use DB;
-use Illuminate\Console\Command;
 use Chaihao\Rap\Models\Sys\SysAddress;
+use Illuminate\Console\Command;
 
 class AddAddress extends Command
 {
@@ -42,26 +41,75 @@ class AddAddress extends Command
     public function setData()
     {
         $this->info('开始添加地址数据');
-        $sqlFilePath = __DIR__ . '/../../resources/sql/sys_address.sql';
+        $jsonData = file_get_contents(__DIR__ . '/../../resources/json/sys_address.json');
 
-        if (!file_exists($sqlFilePath)) {
+        if (!$jsonData) {
             throw new \Exception('无法读取地址数据文件');
         }
 
-        $sql = file_get_contents($sqlFilePath);
+        $data = json_decode($jsonData, true);
 
-        $this->info('开始清空地址数据');
-        SysAddress::truncate();
-        $this->info('清空地址数据成功');
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new \Exception('JSON 解析错误：' . json_last_error_msg());
+        }
 
-        $this->info('开始添加地址数据');
-        DB::beginTransaction();
+        \DB::beginTransaction();
         try {
-            DB::statement($sql);
-            DB::commit();
+            SysAddress::truncate();
+            $this->insertAddressData($data);
+            \DB::commit();
             $this->info('地址数据添加成功');
         } catch (\Exception $e) {
-            DB::rollBack();
+            \DB::rollBack();
+            throw $e;
+        }
+    }
+    /**
+     * 插入地址数据
+     * @param array $data 地址数据
+     * @param int $parentCode 父级代码
+     */
+    private function insertAddressData($data, $parentCode = 0)
+    {
+        $batchData = [];
+        $batchSize = 300;
+        $totalCount = count($data);
+        $progress = $this->output->createProgressBar($totalCount);
+
+        try {
+            foreach ($data as $item) {
+                $addressData = [
+                    'code' => $item['code'],
+                    'name' => $item['name'],
+                    'parent_code' => $parentCode,
+                ];
+                $batchData[] = $addressData;
+
+                if (count($batchData) >= $batchSize) {
+                    SysAddress::insert($batchData);
+                    $batchData = [];
+                }
+
+                if (isset($item['children']) && !empty($item['children'])) {
+                    $this->insertAddressData($item['children'], $item['code']);
+                }
+
+                $progress->advance();
+            }
+
+            if (!empty($batchData)) {
+                SysAddress::insert($batchData);
+            }
+
+            $progress->finish();
+            $this->line(''); // 添加换行
+
+        } catch (\Exception $e) {
+            \Log::error('插入地址数据失败', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
             throw $e;
         }
     }
