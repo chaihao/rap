@@ -2,9 +2,9 @@
 
 namespace Chaihao\Rap\Console\Commands;
 
-use App\Models\Ulity\SysAddress;
-use Illuminate\Console\Command;
 use DB;
+use Illuminate\Console\Command;
+use Chaihao\Rap\Models\Sys\SysAddress;
 
 class AddAddress extends Command
 {
