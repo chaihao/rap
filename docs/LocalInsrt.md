@@ -21,11 +21,11 @@ composer require chaihao/laravel-rap-admin:@dev
 ## 打标签
 
 ```
-composer tag 1.3.0
+git tag -a v1.4.2 -m "Release version 1.4.2"
 ```
 
 ## 推送到远程仓库
 
 ```
-git push origin v1.3.0
+git push origin v1.4.2
 ```
