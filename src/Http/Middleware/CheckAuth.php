@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Redis;
 
 class CheckAuth
 {
@@ -50,6 +51,19 @@ class CheckAuth
             if (!($staff instanceof $staffClass)) {
                 return $this->unauthorizedResponse('无效的用户类型');
             }
+
+            // 从 Redis 验证 token 是否有效
+            $tokenString = JWTAuth::getToken()->get();
+            $redisToken = Redis::get('jwt_token:' . $staff->id);
+
+            // 如果 Redis 中不存在 token 或与当前 token 不匹配，则拒绝访问
+            if (!$redisToken || $redisToken !== $tokenString) {
+                return $this->unauthorizedResponse('登录已过期或在其他设备登录');
+            }
+
+            // 刷新 Redis 中 token 的过期时间
+            $tokenTTL = config('jwt.ttl', 60); // 获取 JWT 配置的过期时间（分钟）
+            Redis::expire('jwt_token:' . $staff->id, $tokenTTL * 60);
 
             // 设置当前用户信息
             CurrentStaff::setStaff((object)$staff);

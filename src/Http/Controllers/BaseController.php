@@ -8,6 +8,7 @@ use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Routing\Controller;
 use Chaihao\Rap\Exception\ApiException;
 use Illuminate\Http\{JsonResponse, Request};
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\{Response, Validator};
 
 abstract class BaseController extends Controller
@@ -23,7 +24,7 @@ abstract class BaseController extends Controller
     public function __construct(Request $request)
     {
         $this->request = $request;
-        $this->response = app(Response::class);
+        $this->response = App::make(Response::class);
         $this->initServiceAndModel();
     }
 

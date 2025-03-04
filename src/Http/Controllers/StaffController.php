@@ -6,11 +6,13 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Chaihao\Rap\Models\Auth\Staff;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Chaihao\Rap\Facades\CurrentStaff;
+use Illuminate\Support\Facades\Redis;
 use Chaihao\Rap\Exception\ApiException;
-use Chaihao\Rap\Services\Export\StaffExportService;
 use Chaihao\Rap\Services\Auth\StaffService;
 use Chaihao\Rap\Services\Sys\PermissionService;
 use Chaihao\Rap\Http\Controllers\BaseController;
+use Chaihao\Rap\Services\Export\StaffExportService;
 
 class StaffController extends BaseController
 {
@@ -39,6 +41,14 @@ class StaffController extends BaseController
             ]);
 
             $result = $this->service->login($params);
+
+            // 将 token 存入 Redis，设置与 JWT 相同的过期时间
+            if (isset($result['data']['token'])) {
+                $userId = auth()->guard()->user()->id;
+                $tokenTTL = config('jwt.ttl', 60); // 获取 JWT 配置的过期时间（分钟）
+                Redis::setex('jwt_token:' . $userId, $tokenTTL * 60, $result['data']['token']);
+            }
+
             return $this->success($result['data'], $result['message'] ?? '登录成功');
         } catch (\Throwable $th) {
             return $this->failed($th->getMessage());
@@ -125,6 +135,9 @@ class StaffController extends BaseController
         ]);
 
         $this->service->changePasswordBySelf($params);
+        // 从 Redis 中删除用户的 JWT token  
+        Redis::del('jwt_token:' . CurrentStaff::getId());
+
         return $this->success('修改密码成功');
     }
 
@@ -165,11 +178,19 @@ class StaffController extends BaseController
     public function logout(): JsonResponse
     {
         try {
+            $user = auth()->guard()->user();
+            $userId = $user ? $user->id : null;
+
+            // 从 Redis 中删除 token
+            if ($userId) {
+                Redis::del('jwt_token:' . $userId);
+            }
+
             auth()->guard()->logout();
             JWTAuth::invalidate();
             return $this->success('登出成功');
         } catch (ApiException $e) {
-            return $this->failed('登出失敗: ' . $e->getMessage());
+            return $this->failed('登出失败: ' . $e->getMessage());
         }
     }
 

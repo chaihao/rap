@@ -163,7 +163,7 @@ class StaffService extends BaseService
     */
    public function changePasswordBySelf(array $params)
    {
-      $user = $this->model::query()->find($params['id']);
+      $user = $this->model::query()->find(CurrentStaff::getId());
       if (!$user->verifyPassword($params['old_password'])) {
          throw ApiException::failed('旧密码错误');
       }
