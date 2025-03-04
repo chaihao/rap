@@ -6,6 +6,7 @@ use Chaihao\Rap\Services\Sys\OperationLogService;
 use Chaihao\Rap\Http\Controllers\BaseController;
 use Chaihao\Rap\Models\Sys\OperationLog;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\App;
 
 class OperationLogController extends BaseController
 {
@@ -14,7 +15,7 @@ class OperationLogController extends BaseController
      */
     protected function initServiceAndModel(): void
     {
-        $this->service = app(OperationLogService::class);
-        $this->model = app(OperationLog::class);
+        $this->service = App::make(OperationLogService::class);
+        $this->model = App::make(OperationLog::class);
     }
 }

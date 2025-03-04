@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Chaihao\Rap\Models\Auth\Staff;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\App;
 use Chaihao\Rap\Facades\CurrentStaff;
 use Illuminate\Support\Facades\Redis;
 use Chaihao\Rap\Exception\ApiException;
@@ -18,9 +19,9 @@ class StaffController extends BaseController
 {
     protected function initServiceAndModel(): void
     {
-        $this->service = app(StaffService::class);
-        $this->model = app(Staff::class);
-        $this->exportService = app(StaffExportService::class);
+        $this->service = App::make(StaffService::class);
+        $this->model = App::make(Staff::class);
+        $this->exportService = App::make(StaffExportService::class);
     }
 
     /**
@@ -92,8 +93,8 @@ class StaffController extends BaseController
     public function staffInfo(): JsonResponse
     {
         $staff = auth()->guard()->user();
-        $staff->permissions = app(PermissionService::class)->getUserPermissions($staff->id, 'name');
-        $staff->roles = app(PermissionService::class)->getUserRoles($staff->id, 'name');
+        $staff->permissions = App::make(PermissionService::class)->getUserPermissions($staff->id, 'name');
+        $staff->roles = App::make(PermissionService::class)->getUserRoles($staff->id, 'name');
 
         if ($staff) {
             return $this->success($staff);

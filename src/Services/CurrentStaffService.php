@@ -98,14 +98,13 @@ class CurrentStaffService extends BaseService
    /**
     * 使用缓存获取用户数据
     * 
-    * @return ?Staff
+    * @return mixed
     */
-   public function getStaffWithCache(): ?Staff
+   public function getStaffWithCache(): mixed
    {
       if (!$this->staff || !isset($this->staff->id)) {
          return null;
       }
-
       return Cache::remember('staff_' . $this->staff->id, now()->addMinutes(10), function () {
          return $this->staff->load(['roles', 'permissions']);
       });

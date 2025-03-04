@@ -4,6 +4,7 @@ namespace DummyNamespace;
 
 use Chaihao\Rap\Http\Controllers\BaseController;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\App;
 USED_DUMMY_MODEL
 USED_DUMMY_SERVICE
 
@@ -14,7 +15,7 @@ class DummyClass extends BaseController
      */
     protected function initServiceAndModel(): void
     {
-        $this->service = app(DummyService::class);
-        $this->model = app(DummyModel::class);
+        $this->service = App::make(DummyService::class);
+        $this->model = App::make(DummyModel::class);
     }
 }

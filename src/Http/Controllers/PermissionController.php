@@ -7,13 +7,14 @@ use Chaihao\Rap\Models\Sys\Roles;
 use Illuminate\Http\JsonResponse;
 use Spatie\Permission\Models\Permission;
 use Chaihao\Rap\Services\Sys\PermissionService;
+use Illuminate\Support\Facades\App;
 
 class PermissionController extends BaseController
 {
     protected function initServiceAndModel(): void
     {
-        $this->service = app(PermissionService::class);
-        $this->model = app(Permission::class);
+        $this->service = App::make(PermissionService::class);
+        $this->model = App::make(Permission::class);
     }
     /**
      * 给用户直接分配权限
