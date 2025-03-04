@@ -42,10 +42,9 @@ class StaffController extends BaseController
             ]);
 
             $result = $this->service->login($params);
-
             // 将 token 存入 Redis，设置与 JWT 相同的过期时间
             if (isset($result['data']['token'])) {
-                $userId = auth()->guard()->user()->id;
+                $userId = $result['data']['user_id'];
                 $tokenTTL = config('jwt.ttl', 60); // 获取 JWT 配置的过期时间（分钟）
                 Redis::setex('jwt_token:' . $userId, $tokenTTL * 60, $result['data']['token']);
             }
