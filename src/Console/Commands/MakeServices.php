@@ -59,8 +59,8 @@ class MakeServices extends GeneratorCommand
     protected function getOptions()
     {
         return [
-            ['create-model', 'm', InputOption::VALUE_OPTIONAL, '是否创建模型', true],
-            ['create-controller', 'c', InputOption::VALUE_OPTIONAL, '是否创建控制器', true],
+            ['create-model', 'm', InputOption::VALUE_OPTIONAL, '是否创建模型', config('rap.create_services.model', true)],
+            ['create-controller', 'c', InputOption::VALUE_OPTIONAL, '是否创建控制器', config('rap.create_services.controller', true)],
         ];
     }
 
@@ -143,8 +143,8 @@ class MakeServices extends GeneratorCommand
         try {
             // 使用数组来存储需要处理的文件
             $filesToHandle = [
-                'model' => filter_var($this->option('create-model'), FILTER_VALIDATE_BOOLEAN) ?? true,
-                'controller' => filter_var($this->option('create-controller'), FILTER_VALIDATE_BOOLEAN) ?? true
+                'model' => filter_var($this->option('create-model'), FILTER_VALIDATE_BOOLEAN) ?? config('rap.create_services.model', true),
+                'controller' => filter_var($this->option('create-controller'), FILTER_VALIDATE_BOOLEAN) ?? config('rap.create_services.controller', true)
             ];
             foreach ($filesToHandle as $type => $shouldHandle) {
                 if ($shouldHandle) {
