@@ -26,13 +26,21 @@ use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 class ApiException extends Exception
 {
     // HTTP 状态码常量定义
+    // 请求错误
     public const BAD_REQUEST = Response::HTTP_BAD_REQUEST;           // 400
+    // 未授权
     public const UNAUTHORIZED = Response::HTTP_UNAUTHORIZED;         // 401
+    // 禁止访问
     public const FORBIDDEN = Response::HTTP_FORBIDDEN;              // 403
+    // 未找到
     public const NOT_FOUND = Response::HTTP_NOT_FOUND;             // 404
+    // 验证错误
     public const VALIDATION_ERROR = Response::HTTP_UNPROCESSABLE_ENTITY; // 422
+    // 服务器错误
     public const SERVER_ERROR = Response::HTTP_INTERNAL_SERVER_ERROR;    // 500
+    // 数据库连接错误
     public const DB_CONNECTION_ERROR = self::SERVER_ERROR;    // 500
+    // Redis 连接错误
     public const REDIS_CONNECTION_ERROR = self::SERVER_ERROR; // 500
 
     protected int $statusCode;
