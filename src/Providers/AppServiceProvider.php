@@ -52,8 +52,10 @@ class AppServiceProvider extends ServiceProvider
         // 设置默认语言
         $locale = Config::get('app.locale', 'zh_CN');
         App::setLocale($locale);
-
-        $this->setupSqlLogging();
+        // 检查是否启用了SQL日志记录
+        if (Config::get('rap.logging.enable_sql_logging')) {
+            $this->setupSqlLogging();
+        }
     }
 
 
@@ -75,13 +77,9 @@ class AppServiceProvider extends ServiceProvider
                     throw new \RuntimeException('无法创建SQL日志目录');
                 }
             }
-
-            // 检查是否启用了SQL日志记录
-            if (Config::get('rap.logging.enable_sql_logging')) {
-                // 确保日志通道已配置
-                $this->configureLoggingChannel();
-                $this->replaceBinding();
-            }
+            // 确保日志通道已配置
+            $this->configureLoggingChannel();
+            $this->replaceBinding();
         } catch (Throwable $e) {
             Log::error('设置SQL日志失败: ' . $e->getMessage());
         }
