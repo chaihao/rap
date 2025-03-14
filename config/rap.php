@@ -16,6 +16,10 @@ return [
     'controller' => [
         'version' => env('RAP_CONTROLLER_VERSION', ''), // 控制器版本
     ],
+    'create_services' => [
+        'model' => env('RAP_CREATE_SERVICES_MODEL', true), // 创建service时，同时创建model
+        'controller' => env('RAP_CREATE_SERVICES_CONTROLLER', true), // 创建service时，同时创建controller
+    ],
     'models' => [
         'staff' => [
             // 配置的模型类必须继承自 Chaihao\Rap\Models\Auth\Staff
