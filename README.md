@@ -189,8 +189,8 @@ php artisan vendor:publish --tag=rap-lang
 ## 升级指南
 
 ```bash
-# 1. 更新组件
-composer update chaihao/rap
+# 1. 更新组件,取最新版
+composer require chaihao/laravel-rap-admin:dev-main
 
 # 2. 发布新资源
 php artisan vendor:publish --tag=rap-config
