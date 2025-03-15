@@ -85,11 +85,15 @@ class ApiException extends Exception
             'file' => $this->getFile(),
             'line' => $this->getLine(),
             'trace' => collect($this->getTrace())
-                ->map(
-                    fn($trace) => collect($trace)
-                        ->only(['file', 'line', 'function', 'class'])
-                        ->toArray()
-                )
+                ->take(5)  // 只取前5条堆栈信息
+                ->map(function ($trace) {
+                    return [
+                        'file' => isset($trace['file']) ? basename($trace['file']) : null,
+                        'line' => $trace['line'] ?? null,
+                        'function' => $trace['function'] ?? null,
+                        'class' => $trace['class'] ?? null,
+                    ];
+                })
                 ->toArray()
         ];
     }
