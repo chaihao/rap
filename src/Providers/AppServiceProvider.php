@@ -78,7 +78,6 @@ class AppServiceProvider extends ServiceProvider
                 }
             }
             // 确保日志通道已配置
-            $this->configureLoggingChannel();
             $this->replaceBinding();
         } catch (Throwable $e) {
             Log::error('设置SQL日志失败: ' . $e->getMessage());
@@ -86,33 +85,16 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * 配置日志通道
-     */
-    private function configureLoggingChannel(): void
-    {
-        $sqlConfig = [
-            'driver' => 'daily',
-            'path' => storage_path('logs/sql/sql.log'),
-            'level' => Config::get('rap.logging.sql_log_level', 'debug'),
-            'days' => Config::get('rap.logging.sql_log_days', 14),
-        ];
-
-        Config::set('logging.channels.daily_sql', $sqlConfig);
-    }
-
-
-
-
-    /**
      * 替换SQL绑定参数并记录完整SQL语句
      * 
-     * 此方法监听数据库查询，处理绑定参数，并记录完整的SQL语句到日志
+     * 此方法监听数据库查询，处理绑定参数，并记录完整的SQL语句及执行时间到日志
      */
     public function replaceBinding()
     {
         DB::listen(function ($query) {
             $sql = $query->sql;
             $bindings = $query->bindings;
+            $time = $query->time; // 获取查询执行时间（毫秒）
 
             // 处理不同类型的绑定参数
             foreach ($bindings as $i => $binding) {
@@ -136,8 +118,60 @@ class AppServiceProvider extends ServiceProvider
             // 生成完整的SQL语句
             $fullSql = vsprintf($sql, $bindings);
 
-            // 记录完整的SQL语句到日志
-            Log::channel('daily_sql')->debug($fullSql);
+            // 为不同类型的SQL语句添加标识和执行时间分类
+            $sqlType = $this->getSqlType($fullSql);
+            $timeCategory = $this->getTimeCategory($time);
+            // 记录完整的SQL语句和执行时间到日志，添加SQL类型和时间分类标识
+            Log::channel('daily_sql')->info("[{$sqlType} - {$timeCategory} - 执行时间: {$time}ms]");
+            Log::channel('daily_sql')->debug("{$fullSql}");
         });
+    }
+
+    /**
+     * 获取SQL语句类型
+     * 
+     * @param string $sql SQL语句
+     * @return string SQL类型标识
+     */
+    private function getSqlType(string $sql): string
+    {
+        $sql = trim(strtoupper($sql));
+
+        if (strpos($sql, 'SELECT') === 0) {
+            return '查询';
+        } elseif (strpos($sql, 'INSERT') === 0) {
+            return '插入';
+        } elseif (strpos($sql, 'UPDATE') === 0) {
+            return '更新';
+        } elseif (strpos($sql, 'DELETE') === 0) {
+            return '删除';
+        } elseif (strpos($sql, 'CREATE') === 0) {
+            return '创建';
+        } elseif (strpos($sql, 'ALTER') === 0) {
+            return '修改';
+        } elseif (strpos($sql, 'DROP') === 0) {
+            return '删表';
+        } else {
+            return '其他';
+        }
+    }
+
+    /**
+     * 获取SQL执行时间分类
+     * 
+     * @param float $time 执行时间（毫秒）
+     * @return string 时间分类标识
+     */
+    private function getTimeCategory(float $time): string
+    {
+        if ($time < 10) {
+            return '快速';
+        } elseif ($time < 100) {
+            return '一般';
+        } elseif ($time < 1000) {
+            return '慢速';
+        } else {
+            return '超慢';
+        }
     }
 }

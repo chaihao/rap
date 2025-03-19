@@ -31,6 +31,11 @@ class MakeModel extends GeneratorCommand
     const TIMESTAMP_FIELDS = ['created_at', 'updated_at', 'deleted_at'];
 
     /**
+     * 软删除字段
+     */
+    const SOFT_DELETE_FIELDS = ['deleted_at'];
+
+    /**
      * 过滤字段
      */
     const FILTER_FIELDS = ['deleted_at'];
@@ -70,19 +75,11 @@ class MakeModel extends GeneratorCommand
         // 获取过滤后的字段列表（不包含时间戳字段）
         $list = $tableName ? $this->organizeData($tableName) : [];
 
-        // // 获取所有字段，包括时间戳字段
-        // $allFields = $tableName ? $this->getAllFields($tableName) : [];
-
         // 移除表前缀
         $stub = str_replace('TABLE', $tableName ? str_replace(env('DB_PREFIX', ''), '', $tableName) : '', $stub);
 
         // 替换验证规则、场景等信息
         $stub = $this->replaceRules($stub, $list, $tableName);
-
-        // // 检查是否需要软删除功能
-        // $hasSoftDeletes = in_array('deleted_at', $list);
-
-
 
         return parent::replaceClass($stub, $name);
     }
@@ -152,14 +149,23 @@ class MakeModel extends GeneratorCommand
 
     /**
      * 添加软删除
+     * @param mixed $stub 模板
+     * @param mixed $hasSoftDelete 是否存在软删除字段
+     * @return array|string
      */
-    protected function addSoftDeletes($stub)
+    protected function addSoftDeletes($stub, $hasSoftDelete)
     {
-        $useStatement = 'use Illuminate\Database\Eloquent\SoftDeletes;';
-        $traitUse = 'use SoftDeletes;';
-
-        $stub = str_replace('USE_SOFT_DELETES_STATEMENT', $useStatement, $stub);
-        $stub = str_replace('USE_SOFT_DELETES', $traitUse, $stub);
+        if ($hasSoftDelete) {
+            $useStatement = 'use Illuminate\Database\Eloquent\SoftDeletes;';
+            $traitUse = 'use SoftDeletes;';
+            $stub = str_replace('USE_SOFT_DELETES_STATEMENT', $useStatement, $stub);
+            $stub = str_replace('USE_SOFT_DELETES', $traitUse, $stub);
+        } else {
+            // 如果不存在软删除字段，移除相关的占位符
+            $stub = str_replace('USE_SOFT_DELETES_STATEMENT', '', $stub);
+            // 移除软删除trait
+            $stub = str_replace('USE_SOFT_DELETES', '', $stub);
+        }
         return $stub;
     }
 
@@ -229,9 +235,17 @@ class MakeModel extends GeneratorCommand
                 'edit' => []
             ];
 
+            // 检查是否存在软删除字段
+            $hasSoftDelete = false;
+
             foreach ($list as $item) {
                 // 添加可填充字段
                 $fillable[] = $item->Field;
+
+                // 检查是否有软删除字段
+                if (in_array($item->Field, self::SOFT_DELETE_FIELDS)) {
+                    $hasSoftDelete = true;
+                }
 
                 if (!in_array($item->Field, self::FILTER_FIELDS)) {
                     // 添加验证器属性
@@ -284,18 +298,11 @@ class MakeModel extends GeneratorCommand
             // 添加验证器自定义属性
             $stub = str_replace('SET_VALIDATOR_ATTRIBUTES', $this->arrayToString($getValidatorAttributes), $stub);
             // 添加软删除
-            if (in_array('deleted_at', $fillable)) {
-                $stub = $this->addSoftDeletes($stub);
-            } else {
-                // 如果不存在 deleted_at 字段，移除相关的占位符
-                $stub = str_replace('USE_SOFT_DELETES_STATEMENT', '', $stub);
-                // 移除软删除trait
-                $stub = str_replace('USE_SOFT_DELETES', '', $stub);
-            }
-
+            $stub = $this->addSoftDeletes($stub, $hasSoftDelete);
             return $stub;
         } catch (\Exception $e) {
-            return str_replace(['RULES', 'SCENARIOS'], '', $stub);
+            $this->error("生成规则时出错：" . $e->getMessage());
+            return str_replace(['RULES', 'SCENARIOS', 'CASTS', 'FILLABLE', 'SET_VALIDATOR_ATTRIBUTES', 'USE_SOFT_DELETES_STATEMENT', 'USE_SOFT_DELETES'], '', $stub);
         }
     }
 

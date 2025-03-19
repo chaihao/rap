@@ -7,7 +7,11 @@ use Illuminate\Support\Facades\Cache;
 
 class CurrentStaffService extends BaseService
 {
-   private $staff = null;
+   private ?Staff $staff = null;
+
+   // 定义缓存键前缀
+   private const CACHE_KEY_PREFIX = 'staff_';
+   private const CACHE_TTL = 10; // 分钟
 
    /**
     * 设置当前用户
@@ -98,15 +102,20 @@ class CurrentStaffService extends BaseService
    /**
     * 使用缓存获取用户数据
     * 
-    * @return mixed
+    * @return ?Staff
     */
-   public function getStaffWithCache(): mixed
+   public function getStaffWithCache(): ?Staff
    {
-      if (!$this->staff || !isset($this->staff->id)) {
+      if (!$this->getId()) {
          return null;
       }
-      return Cache::remember('staff_' . $this->staff->id, now()->addMinutes(10), function () {
-         return $this->staff->load(['roles', 'permissions']);
-      });
+
+      return Cache::remember(
+         self::CACHE_KEY_PREFIX . $this->getId(),
+         now()->addMinutes(self::CACHE_TTL),
+         function () {
+            return $this->staff->load(['roles', 'permissions']);
+         }
+      );
    }
 }

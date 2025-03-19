@@ -16,12 +16,21 @@ return [
     'sql_log_days' => env('RAP_SQL_LOG_DAYS', 14),
 
     'channels' => [
+        // 自定义SQL日志通道   
         'daily_sql' => [
             'driver' => 'daily',
             'path' => storage_path('logs/sql/sql.log'),
             'level' => env('RAP_SQL_LOG_LEVEL', 'debug'),
             'days' => env('RAP_SQL_LOG_DAYS', 14),
-            'permission' => 0777,
+            'permission' => 0755,
+        ],
+        // 自定义Error日志通道   
+        'api_errors' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/api_errors.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_DAILY_DAYS', 14),
+            'permission' => 0755,
         ],
     ],
 ];

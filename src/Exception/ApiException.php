@@ -3,13 +3,13 @@
 namespace Chaihao\Rap\Exception;
 
 use Exception;
-use RedisException;
 use Throwable;
+use RedisException;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Client\ConnectionException;
-use Predis\Connection\ConnectionException as PredisConnectionException;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Http\Client\ConnectionException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
+use Predis\Connection\ConnectionException as PredisConnectionException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 
 /**
@@ -64,15 +64,17 @@ class ApiException extends Exception
             'code' => $this->code,
             'message' => $this->message,
         ];
-
-        if (!is_null($this->errors)) {
-            $response['errors'] = $this->errors;
-        }
-
+        // 仅在调试模式下返回调试信息
         if (config('app.debug')) {
-            $response['debug'] = $this->getDebugInfo();
+            if (!is_null($this->errors)) {
+                $response['debug']['errors'] = $this->errors;
+            }
+            $response['debug']['trace'] = $this->getDebugInfo();
         }
-
+        // statusCode 为 http 状态码, 范围在 100 - 599 之间
+        if ($this->statusCode < 100 || $this->statusCode > 599) {
+            $this->statusCode = self::BAD_REQUEST;
+        }
         return response()->json($response, $this->statusCode);
     }
 
@@ -148,10 +150,10 @@ class ApiException extends Exception
      */
     public static function mysqlConnectionError(string $message = 'MySQL连接失败'): static
     {
-        return new static($message, self::DB_CONNECTION_ERROR);
+        // return new static($message, self::DB_CONNECTION_ERROR);
+        $msgCode = explode(':', $message);
+        return new static($msgCode[0], self::DB_CONNECTION_ERROR, $message);
     }
-
-
 
 
     /**
@@ -193,6 +195,7 @@ class ApiException extends Exception
             ];
             return new static($message, self::SERVER_ERROR, $debug);
         }
+
 
         // 检测 Redis 连接异常
         if (

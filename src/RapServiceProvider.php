@@ -41,7 +41,7 @@ class RapServiceProvider extends ServiceProvider
 
         // 修改 auth 配置合并方式
         $this->app->booting(function () {
-            $config = $this->app['config']->get('auth', []);
+            $config = $this->app['config']->get('auth', []);    
             $rapAuth = require __DIR__ . '/../config/auth.php';
 
             // 优化配置合并逻辑
@@ -104,9 +104,17 @@ class RapServiceProvider extends ServiceProvider
     {
         // 注册全局中间件
         $kernel = $this->app->make(\Illuminate\Contracts\Http\Kernel::class);
-        $kernel->pushMiddleware(\Chaihao\Rap\Http\Middleware\BaseMiddleware::class);
-        $kernel->pushMiddleware(\Chaihao\Rap\Http\Middleware\Cors::class);
-        $kernel->pushMiddleware(\Chaihao\Rap\Http\Middleware\Upgrade::class);
+
+        // 使用数组批量注册全局中间件
+        $globalMiddlewares = [
+            \Chaihao\Rap\Http\Middleware\BaseMiddleware::class,
+            \Chaihao\Rap\Http\Middleware\Cors::class,
+            \Chaihao\Rap\Http\Middleware\Upgrade::class,
+        ];
+
+        foreach ($globalMiddlewares as $middleware) {
+            $kernel->pushMiddleware($middleware);
+        }
 
         // 注册路由中间件
         $router->aliasMiddleware('check.auth', \Chaihao\Rap\Http\Middleware\CheckAuth::class);
