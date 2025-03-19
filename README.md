@@ -22,7 +22,7 @@ RAP 是一个基于 Laravel 的后台管理系统组件包,提供完整的 RBAC 
 ### 1. 安装
 
 ```bash
-composer require chaihao/laravel-rap-admin
+composer require chaihao/laravel-rap-admin:dev-main
 ```
 
 ### 2. 基础配置
