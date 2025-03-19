@@ -68,8 +68,6 @@ RAP_CONTROLLER_VERSION=V1\ # 控制器版本
 
 # 日志配置
 RAP_ENABLE_SQL_LOGGING=true   # 启用 SQL 日志
-RAP_SQL_LOG_LEVEL=debug      # 日志级别
-RAP_SQL_LOG_DAYS=14         # 日志保留天数
 
 # 系统配置
 SYSTEM_UPGRADE=false        # 系统升级模式
